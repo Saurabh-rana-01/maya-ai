@@ -2257,64 +2257,184 @@
     // 12. ONBOARDING & EMAIL CONNECTION MODAL
     // ==========================================
     function OnboardingModal({ onClose, onAccountConnected }) {
-      const [step, setStep] = useState(1); // 1: Choose provider, 2: Simulated Auth, 3: Syncing
-      const [provider, setProvider] = useState('google');
+      const [step, setStep] = useState(1); // 1: Choose provider, 2: Config/Credentials, 3: Syncing
+      const [provider, setProvider] = useState('imap');
       const [emailInput, setEmailInput] = useState('');
+      const [nameInput, setNameInput] = useState('Saurabh Kumar Rana');
+      const [passwordInput, setPasswordInput] = useState('');
+      const [imapHost, setImapHost] = useState('');
+      const [imapPort, setImapPort] = useState('993');
+      const [smtpHost, setSmtpHost] = useState('');
+      const [smtpPort, setSmtpPort] = useState('465');
       const [syncProgress, setSyncProgress] = useState(0);
+      const [statusText, setStatusText] = useState('Initializing sync...');
+
+      const handleEmailChange = (val) => {
+        setEmailInput(val);
+        const domain = val.split('@')[1]?.toLowerCase();
+        if (domain) {
+          if (domain === 'gmail.com' || domain === 'googlemail.com') {
+            setImapHost('imap.gmail.com');
+            setImapPort('993');
+            setSmtpHost('smtp.gmail.com');
+            setSmtpPort('465');
+          } else if (domain === 'outlook.com' || domain === 'hotmail.com' || domain === 'live.com' || domain === 'office365.com') {
+            setImapHost('outlook.office365.com');
+            setImapPort('993');
+            setSmtpHost('smtp.office365.com');
+            setSmtpPort('587');
+          } else if (domain === 'yahoo.com') {
+            setImapHost('imap.mail.yahoo.com');
+            setImapPort('993');
+            setSmtpHost('smtp.mail.yahoo.com');
+            setSmtpPort('465');
+          } else if (domain === 'icloud.com' || domain === 'me.com') {
+            setImapHost('imap.mail.me.com');
+            setImapPort('993');
+            setSmtpHost('smtp.mail.me.com');
+            setSmtpPort('587');
+          } else if (!imapHost || imapHost.startsWith('mail.')) {
+            setImapHost(`mail.${domain}`);
+            setImapPort('993');
+            setSmtpHost(`mail.${domain}`);
+            setSmtpPort('465');
+          }
+        }
+      };
 
       const startConnection = (selectedProvider) => {
         setProvider(selectedProvider);
-        setEmailInput(selectedProvider === 'google' ? 'sarah.founder@gmail.com' : 's.jenkins@outlook.com');
+        if (selectedProvider === 'google') {
+          setEmailInput('saurabh@gmail.com');
+        } else if (selectedProvider === 'microsoft') {
+          setEmailInput('saurabh@outlook.com');
+        } else {
+          setEmailInput('');
+        }
         setStep(2);
       };
 
-      const authorizeAndSync = () => {
+      const authorizeAndSync = async () => {
         setStep(3);
-        let progress = 0;
-        const interval = setInterval(() => {
-          progress += 25;
-          setSyncProgress(progress);
-          if (progress >= 100) {
-            clearInterval(interval);
-            setTimeout(() => {
-              onAccountConnected({
-                id: `acc-${Date.now()}`,
+        setSyncProgress(25);
+        setStatusText('Connecting to mail server...');
+
+        let connectedAccount = null;
+        let syncedEmails = [];
+
+        try {
+          if (provider === 'imap') {
+            setSyncProgress(50);
+            setStatusText('Connecting via TLS & fetching recent emails...');
+
+            const res = await fetch('/api/accounts/connect-imap', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                email: emailInput,
+                password: passwordInput,
+                imapHost: imapHost || `mail.${emailInput.split('@')[1] || 'domain.com'}`,
+                imapPort: parseInt(imapPort || '993', 10),
+                smtpHost: smtpHost || imapHost || `mail.${emailInput.split('@')[1] || 'domain.com'}`,
+                smtpPort: parseInt(smtpPort || '465', 10),
+                clientName: nameInput,
+                clientTitle: 'Executive'
+              })
+            });
+
+            const data = await res.json();
+            if (data && data.account) {
+              connectedAccount = data.account;
+            }
+          } else {
+            // Simulated OAuth provider
+            const res = await fetch('/api/accounts/connect', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
                 provider,
                 email: emailInput,
-                name: `${provider === 'google' ? 'Google Workspace' : 'Microsoft 365'} (${emailInput})`,
-                clientName: 'Sarah Jenkins',
-                clientTitle: 'Executive Account',
-                avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
-                syncStatus: 'active',
-                lastSynced: 'Just now',
-                totalThreads: 6
-              });
-            }, 400);
+                clientName: nameInput,
+                clientTitle: 'Executive'
+              })
+            });
+            const data = await res.json();
+            if (data && data.account) {
+              connectedAccount = data.account;
+            }
           }
-        }, 350);
+        } catch (e) {
+          console.warn('API error, using local fallback:', e);
+        }
+
+        // Fallback if offline
+        if (!connectedAccount) {
+          connectedAccount = {
+            id: `acc-${Date.now()}`,
+            provider,
+            email: emailInput,
+            name: `${nameInput} (${provider === 'imap' ? (imapHost || 'IMAP') : provider})`,
+            clientName: nameInput,
+            clientTitle: 'Executive Account',
+            avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(nameInput || emailInput)}`,
+            syncStatus: 'active',
+            lastSynced: 'Just now',
+            totalThreads: 0
+          };
+        }
+
+        setSyncProgress(80);
+        setStatusText('Applying Maya AI triage & classification models...');
+
+        setTimeout(() => {
+          setSyncProgress(100);
+          setStatusText('Mailbox connected and synchronized!');
+          setTimeout(() => {
+            onAccountConnected(connectedAccount, syncedEmails);
+          }, 400);
+        }, 500);
       };
 
       return (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 my-8">
             
             {step === 1 && (
               <div>
-                <h3 className="text-lg font-extrabold text-slate-900 mb-1">Connect Email Account</h3>
-                <p className="text-xs text-slate-500 mb-5">Select your client's email provider to authorize Maya AI.</p>
+                <h3 className="text-lg font-extrabold text-slate-900 mb-1">Connect Your Email Account</h3>
+                <p className="text-xs text-slate-500 mb-5">Select your email provider to connect your own inbox with Maya AI.</p>
 
                 <div className="space-y-3 mb-6">
                   <button
-                    onClick={() => startConnection('google')}
-                    className="w-full flex items-center justify-between p-3.5 rounded-2xl border border-slate-200 hover:border-brand-500 hover:bg-brand-50/50 transition group"
+                    onClick={() => startConnection('imap')}
+                    className="w-full flex items-center justify-between p-3.5 rounded-2xl border-2 border-brand-500/40 bg-brand-50/30 hover:bg-brand-50 hover:border-brand-600 transition group"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center font-bold text-xs">
+                      <div className="w-9 h-9 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-xs">
+                        <Icon name="mail" className="w-5 h-5 text-brand-700" />
+                      </div>
+                      <div className="text-left">
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs font-bold text-slate-900 group-hover:text-brand-900">Custom IMAP / SMTP (Own Email)</p>
+                          <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-brand-200 text-brand-900">Recommended</span>
+                        </div>
+                        <p className="text-[11px] text-slate-500">Connect any domain, corporate email, Gmail, or webmail</p>
+                      </div>
+                    </div>
+                    <Icon name="check" className="w-4 h-4 text-brand-600" />
+                  </button>
+
+                  <button
+                    onClick={() => startConnection('google')}
+                    className="w-full flex items-center justify-between p-3.5 rounded-2xl border border-slate-200 hover:border-brand-500 hover:bg-slate-50 transition group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-red-50 text-red-600 flex items-center justify-center font-bold text-xs">
                         G
                       </div>
                       <div className="text-left">
                         <p className="text-xs font-bold text-slate-800 group-hover:text-brand-900">Google Workspace / Gmail</p>
-                        <p className="text-[11px] text-slate-400">OAuth2.0 Secure Sync</p>
+                        <p className="text-[11px] text-slate-400">OAuth 2.0 Integration</p>
                       </div>
                     </div>
                     <Icon name="check" className="w-4 h-4 text-slate-300 group-hover:text-brand-600" />
@@ -2322,10 +2442,10 @@
 
                   <button
                     onClick={() => startConnection('microsoft')}
-                    className="w-full flex items-center justify-between p-3.5 rounded-2xl border border-slate-200 hover:border-brand-500 hover:bg-brand-50/50 transition group"
+                    className="w-full flex items-center justify-between p-3.5 rounded-2xl border border-slate-200 hover:border-brand-500 hover:bg-slate-50 transition group"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xs">
+                      <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xs">
                         M
                       </div>
                       <div className="text-left">
@@ -2346,45 +2466,125 @@
             )}
 
             {step === 2 && (
-              <div>
-                <div className="w-12 h-12 rounded-2xl bg-brand-100 text-brand-700 flex items-center justify-center mb-4">
-                  <Icon name="shield" className="w-6 h-6" />
-                </div>
-                <h3 className="text-base font-bold text-slate-900 mb-1">Grant Maya AI Permissions</h3>
-                <p className="text-xs text-slate-500 mb-4">Connecting as <strong className="text-slate-800">{emailInput}</strong></p>
-
-                <div className="space-y-2 mb-6 bg-slate-50 p-3.5 rounded-2xl border border-slate-100 text-xs text-slate-600">
-                  <div className="flex items-center gap-2">
-                    <Icon name="check" className="w-4 h-4 text-emerald-600" />
-                    <span>Read email threads to classify responsibility</span>
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 pb-2 border-b border-slate-100">
+                  <div className="w-10 h-10 rounded-xl bg-brand-100 text-brand-700 flex items-center justify-center">
+                    <Icon name="mail" className="w-5 h-5" />
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Icon name="check" className="w-4 h-4 text-emerald-600" />
-                    <span>Draft responses with mandatory assistant approval</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Icon name="check" className="w-4 h-4 text-emerald-600" />
-                    <span>Detect calendar appointments and deadlines</span>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900">
+                      {provider === 'imap' ? 'Configure IMAP / SMTP Email Server' : 'Email Account Details'}
+                    </h3>
+                    <p className="text-xs text-slate-500">Enter your credentials to connect with Maya AI</p>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-end gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-700 block mb-1">Your Email Address *</label>
+                    <input
+                      type="email"
+                      required
+                      value={emailInput}
+                      onChange={(e) => handleEmailChange(e.target.value)}
+                      placeholder="e.g. saurabh@yourdomain.com"
+                      className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-700 block mb-1">Your Full Name</label>
+                    <input
+                      type="text"
+                      value={nameInput}
+                      onChange={(e) => setNameInput(e.target.value)}
+                      placeholder="Saurabh Kumar Rana"
+                      className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                    />
+                  </div>
+                </div>
+
+                {provider === 'imap' && (
+                  <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-2.5">
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-700 block mb-1 flex items-center justify-between">
+                        <span>Password / App Password</span>
+                        <span className="text-[10px] text-slate-400 font-normal">Optional for demo registration</span>
+                      </label>
+                      <input
+                        type="password"
+                        value={passwordInput}
+                        onChange={(e) => setPasswordInput(e.target.value)}
+                        placeholder="••••••••••••••••"
+                        className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="col-span-2">
+                        <label className="text-[10px] font-medium text-slate-600 block mb-0.5">IMAP Host (Incoming)</label>
+                        <input
+                          type="text"
+                          value={imapHost}
+                          onChange={(e) => setImapHost(e.target.value)}
+                          placeholder="mail.yourdomain.com"
+                          className="w-full px-2.5 py-1 text-xs rounded-lg border border-slate-200 bg-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-medium text-slate-600 block mb-0.5">IMAP Port</label>
+                        <input
+                          type="text"
+                          value={imapPort}
+                          onChange={(e) => setImapPort(e.target.value)}
+                          placeholder="993"
+                          className="w-full px-2.5 py-1 text-xs rounded-lg border border-slate-200 bg-white"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="col-span-2">
+                        <label className="text-[10px] font-medium text-slate-600 block mb-0.5">SMTP Host (Outgoing)</label>
+                        <input
+                          type="text"
+                          value={smtpHost}
+                          onChange={(e) => setSmtpHost(e.target.value)}
+                          placeholder="mail.yourdomain.com"
+                          className="w-full px-2.5 py-1 text-xs rounded-lg border border-slate-200 bg-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-medium text-slate-600 block mb-0.5">SMTP Port</label>
+                        <input
+                          type="text"
+                          value={smtpPort}
+                          onChange={(e) => setSmtpPort(e.target.value)}
+                          placeholder="465"
+                          className="w-full px-2.5 py-1 text-xs rounded-lg border border-slate-200 bg-white"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
                   <button onClick={() => setStep(1)} className="px-4 py-2 text-xs font-semibold text-slate-500">Back</button>
                   <button
                     onClick={authorizeAndSync}
-                    className="px-5 py-2.5 bg-brand-600 text-white rounded-xl text-xs font-bold shadow-glow-purple hover:bg-brand-700 transition"
+                    disabled={!emailInput.trim()}
+                    className="px-5 py-2.5 bg-brand-600 text-white rounded-xl text-xs font-bold shadow-glow-purple hover:bg-brand-700 disabled:opacity-50 transition"
                   >
-                    Authorize & Synchronize
+                    Connect & Synchronize
                   </button>
                 </div>
               </div>
             )}
 
             {step === 3 && (
-              <div className="text-center py-4">
+              <div className="text-center py-6">
                 <div className="w-12 h-12 rounded-full border-4 border-brand-200 border-t-brand-600 animate-spin mx-auto mb-4"></div>
-                <h3 className="text-sm font-bold text-slate-900 mb-1">Synchronizing Inbox...</h3>
-                <p className="text-xs text-slate-500 mb-4">Applying Maya AI responsibility classification engine</p>
+                <h3 className="text-sm font-bold text-slate-900 mb-1">Synchronizing Mailbox...</h3>
+                <p className="text-xs text-slate-500 mb-4">{statusText}</p>
                 <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden mb-2">
                   <div className="bg-brand-600 h-full transition-all duration-300" style={{ width: `${syncProgress}%` }}></div>
                 </div>

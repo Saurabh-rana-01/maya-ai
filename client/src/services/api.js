@@ -33,6 +33,15 @@ export const api = {
     return await res.json();
   },
 
+  async connectImap(data) {
+    const res = await fetch(`${BASE_URL}/accounts/connect-imap`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    return await res.json();
+  },
+
   async syncAccount(accountId) {
     const res = await fetch(`${BASE_URL}/accounts/sync`, {
       method: 'POST',

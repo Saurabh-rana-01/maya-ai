@@ -4,6 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { db } from './db.js';
 import { aiEngine } from './services/aiEngine.js';
+import { ImapService, SmtpService } from './services/imapConnector.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -94,18 +95,136 @@ export const handleRequest = async (req, res) => {
         id: `acc-${Date.now()}`,
         provider: provider || 'google',
         email,
-        name: `${clientName || 'Client'} (${provider === 'google' ? 'Google Workspace' : 'Microsoft 365'})`,
-        clientName: clientName || 'Sarah Jenkins',
+        name: `${clientName || 'Client'} (${provider === 'google' ? 'Google Workspace' : provider === 'microsoft' ? 'Microsoft 365' : 'Custom IMAP'})`,
+        clientName: clientName || email.split('@')[0],
         clientTitle: clientTitle || 'Executive',
-        avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
+        avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(clientName || email)}`,
         syncStatus: 'active',
         lastSynced: new Date().toISOString(),
         totalThreads: 0,
-        isDefault: false
+        isDefault: true
       };
 
-      db.accounts.push(newAccount);
-      return sendJson(res, 200, { success: true, account: newAccount, message: `Successfully connected ${email} via ${provider}.` });
+      db.accounts.forEach(a => a.isDefault = false);
+      db.accounts.unshift(newAccount);
+      return sendJson(res, 200, { success: true, account: newAccount, message: `Successfully connected ${email}.` });
+    }
+
+    // Connect Custom IMAP / SMTP Account & Sync Live Emails
+    if (pathname === '/api/accounts/connect-imap' && req.method === 'POST') {
+      const body = await parseBody(req);
+      const { email, password, imapHost, imapPort, smtpHost, smtpPort, clientName, clientTitle } = body;
+
+      if (!email || !imapHost) {
+        return sendJson(res, 400, { error: 'Email address and IMAP Host are required.' });
+      }
+
+      let fetchedEmails = [];
+      let syncWarning = null;
+
+      if (password) {
+        try {
+          const imap = new ImapService({
+            host: imapHost,
+            port: imapPort || 993,
+            user: email,
+            password: password
+          });
+          fetchedEmails = await imap.fetchRecentEmails(10);
+        } catch (err) {
+          console.warn('IMAP live sync notice:', err.message);
+          syncWarning = err.message;
+        }
+      }
+
+      const newAccount = {
+        id: `acc-${Date.now()}`,
+        provider: 'custom_imap',
+        email,
+        name: `${clientName || email.split('@')[0]} (${imapHost})`,
+        clientName: clientName || email.split('@')[0],
+        clientTitle: clientTitle || 'Executive',
+        avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(clientName || email)}`,
+        syncStatus: syncWarning ? 'active_with_warning' : 'active',
+        syncError: syncWarning,
+        lastSynced: new Date().toISOString(),
+        imapConfig: { host: imapHost, port: imapPort || 993 },
+        smtpConfig: { host: smtpHost, port: smtpPort || 465 },
+        totalThreads: fetchedEmails.length,
+        isDefault: true
+      };
+
+      db.accounts.forEach(a => a.isDefault = false);
+      db.accounts.unshift(newAccount);
+
+      // Process and classify any fetched real emails with Maya AI
+      for (const rawEmail of fetchedEmails) {
+        const threadData = {
+          subject: rawEmail.subject,
+          clientName: newAccount.clientName,
+          messages: [{
+            id: rawEmail.id,
+            sender: rawEmail.sender.name,
+            senderEmail: rawEmail.sender.email,
+            timestamp: rawEmail.date,
+            body: rawEmail.body,
+            isFromClient: false,
+            isFromAssistant: false
+          }]
+        };
+
+        const classificationResult = aiEngine.classifyThread(threadData);
+        const summaryResult = aiEngine.generateSummary(threadData);
+        const meetingResult = aiEngine.detectMeetingAndActions(threadData);
+
+        await db.addEmail({
+          threadId: rawEmail.threadId,
+          clientAccount: email,
+          clientName: newAccount.clientName,
+          clientTitle: newAccount.clientTitle,
+          subject: rawEmail.subject,
+          sender: rawEmail.sender,
+          recipients: rawEmail.recipients,
+          messages: threadData.messages,
+          classification: classificationResult.classification,
+          confidence: classificationResult.confidence,
+          reasoning: classificationResult.reasoning,
+          isOverridden: false,
+          overrideReason: '',
+          category: classificationResult.category,
+          priority: classificationResult.priority,
+          isImportant: classificationResult.isImportant,
+          isRead: false,
+          isArchived: false,
+          isCompleted: false,
+          waitingForResponse: classificationResult.waitingForResponse,
+          actionRequired: classificationResult.actionRequired,
+          summary: summaryResult.summary,
+          keyPoints: summaryResult.keyPoints,
+          actionItems: meetingResult.actionItems,
+          detectedMeeting: meetingResult.detectedMeeting,
+          clientStatus: { viewedByClient: false, clientActionTaken: 'none', clientNotes: '' },
+          draftReply: {
+            hasDraft: classificationResult.classification === 'Assistant to Reply',
+            text: classificationResult.classification === 'Assistant to Reply'
+              ? aiEngine.generateDraftReply(threadData, 'scheduling').text
+              : '',
+            tone: 'scheduling',
+            status: classificationResult.classification === 'Assistant to Reply' ? 'draft' : 'none',
+            generatedAt: new Date().toISOString()
+          }
+        });
+      }
+
+      return sendJson(res, 200, {
+        success: true,
+        account: newAccount,
+        emailsCount: fetchedEmails.length,
+        syncWarning,
+        message: fetchedEmails.length > 0
+          ? `Successfully connected ${email} and synced ${fetchedEmails.length} live emails with Maya AI classification!`
+          : (syncWarning ? `Connected ${email}. Live sync note: ${syncWarning}` : `Connected ${email} successfully.`)
+      });
     }
 
     if (pathname === '/api/accounts/sync' && req.method === 'POST') {

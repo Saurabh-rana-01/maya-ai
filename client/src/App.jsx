@@ -184,6 +184,15 @@ export default function App() {
     await refreshData();
   };
 
+  const handleConnectImap = async (imapData) => {
+    const res = await api.connectImap(imapData);
+    await refreshData();
+    if (res && res.account) {
+      setActiveAccount(res.account);
+    }
+    return res;
+  };
+
   const handleResetDemo = async () => {
     if (window.confirm('Reset all emails and classifications back to factory demo state?')) {
       await api.resetDemo();
@@ -354,6 +363,7 @@ export default function App() {
         onClose={() => setIsOnboardingOpen(false)}
         accounts={accounts}
         onConnectAccount={handleConnectAccount}
+        onConnectImap={handleConnectImap}
         onSyncAccount={(accId) => api.syncAccount(accId)}
       />
     </div>
