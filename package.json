@@ -1,0 +1,28 @@
+{
+  "name": "maya",
+  "version": "1.0.0",
+  "description": "Maya - AI-Powered Email Management Dashboard for Personal Assistants & Clients",
+  "private": true,
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "install:all": "npm install --workspace=server && npm install --workspace=client",
+    "dev:server": "npm run dev --workspace=server",
+    "dev:client": "npm run dev --workspace=client",
+    "dev": "node run-dev.js",
+    "build": "npm run build --workspace=client",
+    "start": "node server/server.js"
+  },
+  "keywords": [
+    "ai",
+    "email-management",
+    "executive-assistant",
+    "dashboard",
+    "mern",
+    "smart-inbox"
+  ],
+  "author": "Maya AI Team",
+  "license": "MIT"
+}

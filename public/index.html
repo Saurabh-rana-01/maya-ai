@@ -1,0 +1,2551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Maya AI | Executive Email Management Dashboard for Personal Assistants & Clients</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace']
+          },
+          colors: {
+            brand: {
+              50: '#f5f3ff',
+              100: '#ede9fe',
+              200: '#ddd6fe',
+              300: '#c4b5fd',
+              400: '#a78bfa',
+              500: '#8b5cf6',
+              600: '#7c3aed',
+              700: '#6d28d9',
+              800: '#5b21b6',
+              900: '#4c1d95',
+            },
+            exec: {
+              dark: '#0f172a',
+              card: '#1e293b',
+              border: '#334155'
+            }
+          },
+          boxShadow: {
+            'subtle': '0 1px 3px rgba(0,0,0,0.05)',
+            'elevated': '0 10px 30px -5px rgba(0,0,0,0.08), 0 4px 10px -2px rgba(0,0,0,0.03)',
+            'card': '0 0 0 1px rgba(0,0,0,0.05), 0 2px 8px -2px rgba(0,0,0,0.06)',
+            'glow-purple': '0 0 25px -3px rgba(124, 58, 237, 0.25)',
+            'glow-amber': '0 0 25px -3px rgba(245, 158, 11, 0.25)'
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- React 18 & ReactDOM -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  
+  <!-- Babel for inline JSX compilation -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  
+  <!-- Canvas Confetti for satisfying completion animation -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+
+  <style>
+    /* Custom Smooth Scrollbar */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    
+    .glass-nav {
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    .badge-pulse {
+      animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    @keyframes pulse-glow {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.85; transform: scale(1.02); }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen selection:bg-brand-500 selection:text-white">
+  <div id="root"></div>
+
+  <!-- Main Application Script -->
+  <script type="text/babel">
+    const { useState, useEffect, useMemo, useRef } = React;
+
+    // ==========================================
+    // 1. ICONS (Clean SVG Implementation)
+    // ==========================================
+    const Icon = ({ name, className = "w-4 h-4", ...props }) => {
+      switch (name) {
+        case 'mail':
+          return <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>;
+        case 'sparkles':
+          return <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>;
+        case 'user':
+          return <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>;
+        case 'user-check':
+          return <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7zM20 10l2 2 4-4"/></svg>;
+        case 'calendar':
+          return <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>;
+        case 'clock':
+          return <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>;
+        case 'check-circle':
+          return <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>;
+        case 'alert-circle':
+          return <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>;
+        case 'star':
+          return <svg className={className} fill="currentColor" viewBox="0 0 20 20" {...props}><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>;
+        case 'star-outline':
+          return <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>;
+        case 'search':
+          return <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>;
+        case 'refresh':
+          return <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>;
+        case 'send':
+          return <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>;
+        case 'archive':
+          return <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>;
+        case 'arrow-left':
+          return <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>;
+        case 'chevron-down':
+          return <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>;
+        case 'filter':
+          return <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>;
+        case 'plus':
+          return <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/></svg>;
+        case 'zap':
+          return <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>;
+        case 'message-square':
+          return <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>;
+        case 'x':
+          return <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>;
+        case 'check':
+          return <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>;
+        case 'shield':
+          return <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>;
+        default:
+          return <span className={className}>•</span>;
+      }
+    };
+
+    // ==========================================
+    // 2. MOCK DATA & PERSISTENCE LAYER
+    // ==========================================
+    const DEFAULT_ACCOUNTS = [
+      {
+        id: 'acc-1',
+        provider: 'google',
+        email: 'sarah.jenkins@horizon-ventures.com',
+        name: 'Sarah Jenkins (Horizon Primary)',
+        clientName: 'Sarah Jenkins',
+        clientTitle: 'Managing Partner',
+        avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
+        syncStatus: 'active',
+        lastSynced: 'Just now',
+        totalThreads: 8,
+        isDefault: true
+      },
+      {
+        id: 'acc-2',
+        provider: 'microsoft',
+        email: 's.jenkins@stanford.alum.edu',
+        name: 'Stanford Alum / Advisory',
+        clientName: 'Sarah Jenkins',
+        clientTitle: 'Alumni Advisory Board',
+        avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
+        syncStatus: 'active',
+        lastSynced: '12m ago',
+        totalThreads: 3,
+        isDefault: false
+      }
+    ];
+
+    const INITIAL_EMAILS = [
+      {
+        threadId: 'th-101',
+        clientAccount: 'sarah.jenkins@horizon-ventures.com',
+        clientName: 'Sarah Jenkins',
+        clientTitle: 'Managing Partner',
+        subject: 'Series B Lead Terms & Board Governance Agreement ($45M)',
+        sender: {
+          name: 'Marcus Vance',
+          email: 'm.vance@sequoia-capital.com',
+          avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&auto=format&fit=crop&q=80'
+        },
+        recipients: ['sarah.jenkins@horizon-ventures.com'],
+        messages: [
+          {
+            id: 'msg-1',
+            sender: 'Marcus Vance',
+            senderEmail: 'm.vance@sequoia-capital.com',
+            timestamp: '4 hours ago',
+            body: 'Sarah,\n\nOur investment committee met this morning and formally approved the proposed $45M Series B lead terms for Horizon portfolio company "HyperScale".\n\nWe require your personal executive approval on Section 4 (the protective provisions and the 1:1 voting threshold for subsequent financings) before our outside legal counsel issues the final execution docs today.\n\nCould you please review the attached redlines and let me know if you approve this structure so we can finalize by market close?\n\nBest,\nMarcus Vance\nGeneral Partner, Sequoia Capital',
+            isFromClient: false,
+            isFromAssistant: false
+          }
+        ],
+        classification: 'Client to Reply',
+        confidence: 97,
+        reasoning: 'Critical legal & governance approval: Sender explicitly requests Sarah’s personal sign-off on Section 4 protective provisions of the $45M Series B term sheet.',
+        isOverridden: false,
+        overrideReason: '',
+        category: 'Approval',
+        priority: 'high',
+        isImportant: true,
+        isRead: false,
+        isArchived: false,
+        isCompleted: false,
+        waitingForResponse: false,
+        actionRequired: true,
+        summary: 'Marcus Vance (Sequoia Capital) requires Sarah’s personal approval on Section 4 protective voting provisions for the $45M Series B term sheet before today’s close.',
+        keyPoints: [
+          'Investment committee approved $45M Series B',
+          'Requires Sarah’s personal approval on Section 4 protective provisions',
+          'High urgency: needs sign-off today before legal distribution'
+        ],
+        actionItems: [
+          { task: 'Review Section 4 voting provisions on Series B term sheet', assignee: 'Client', completed: false },
+          { task: 'Send approval confirmation or requested changes to Marcus', assignee: 'Client', completed: false }
+        ],
+        detectedMeeting: { hasMeeting: false },
+        clientStatus: {
+          viewedByClient: false,
+          clientActionTaken: 'none',
+          clientNotes: ''
+        },
+        draftReply: {
+          hasDraft: false,
+          text: '',
+          tone: 'professional'
+        },
+        updatedAt: new Date(Date.now() - 4 * 3600 * 1000).toISOString()
+      },
+      {
+        threadId: 'th-102',
+        clientAccount: 'sarah.jenkins@horizon-ventures.com',
+        clientName: 'Sarah Jenkins',
+        clientTitle: 'Managing Partner',
+        subject: 'Quarterly Strategy Sync & Coffee Next Week',
+        sender: {
+          name: 'Elena Rostova',
+          email: 'elena.rostova@lattice-ai.com',
+          avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80'
+        },
+        recipients: ['sarah.jenkins@horizon-ventures.com'],
+        messages: [
+          {
+            id: 'msg-2',
+            sender: 'Elena Rostova',
+            senderEmail: 'elena.rostova@lattice-ai.com',
+            timestamp: '6 hours ago',
+            body: 'Hi Sarah,\n\nHope all is thriving! It was wonderful bumping into you at the AI Founders Dinner last Thursday.\n\nI’d love to connect for 30 minutes next week to sync on enterprise adoption trends and share a sneak peek of our Q4 multi-agent roadmap. Either in-person coffee around South Park or a quick Zoom call would be fantastic.\n\nCould your assistant help find 30 mins that fit your schedule?\n\nWarmly,\nElena Rostova\nVP Product & AI, Lattice',
+            isFromClient: false,
+            isFromAssistant: false
+          }
+        ],
+        classification: 'Assistant to Reply',
+        confidence: 96,
+        reasoning: 'Meeting scheduling request: Counterparty explicitly asks Sarah’s assistant to coordinate calendar availability for a 30-min sync.',
+        isOverridden: false,
+        overrideReason: '',
+        category: 'Scheduling',
+        priority: 'high',
+        isImportant: true,
+        isRead: true,
+        isArchived: false,
+        isCompleted: false,
+        waitingForResponse: false,
+        actionRequired: true,
+        summary: 'Elena Rostova requests a 30-minute sync next week regarding enterprise AI adoption trends and roadmap; asks assistant to coordinate.',
+        keyPoints: [
+          'Follow-up from AI Founders Dinner',
+          'Requests 30-min meeting (Coffee or Zoom)',
+          'Assistant can check calendar and dispatch options'
+        ],
+        actionItems: [
+          { task: 'Check Sarah’s calendar availability for next week', assignee: 'Assistant', completed: false },
+          { task: 'Send 2-3 open 30-min slots to Elena', assignee: 'Assistant', completed: false }
+        ],
+        detectedMeeting: {
+          hasMeeting: true,
+          title: 'Strategy Sync: Elena Rostova & Sarah Jenkins',
+          date: 'Next Tuesday or Wednesday',
+          time: '2:00 PM EST (30 mins)',
+          location: 'Zoom / South Park Coffee',
+          duration: '30 mins'
+        },
+        clientStatus: { viewedByClient: false, clientActionTaken: 'none', clientNotes: '' },
+        draftReply: {
+          hasDraft: true,
+          text: "Hi Elena,\n\nThanks for reaching out! I manage Sarah's calendar and communications.\n\nSarah would love to connect next week. Here are a couple of 30-minute options that work well on her calendar:\n\n• Tuesday, Nov 24th at 2:00 PM EST (Zoom or Blue Bottle South Park)\n• Wednesday, Nov 25th at 11:30 AM EST\n• Thursday, Nov 26th at 3:30 PM EST\n\nPlease let me know which of these aligns with your schedule, and I will promptly dispatch a calendar invitation.\n\nBest regards,\nAlex | Executive Assistant to Sarah Jenkins",
+          tone: 'scheduling'
+        },
+        updatedAt: new Date(Date.now() - 6 * 3600 * 1000).toISOString()
+      },
+      {
+        threadId: 'th-103',
+        clientAccount: 'sarah.jenkins@horizon-ventures.com',
+        clientName: 'Sarah Jenkins',
+        clientTitle: 'Managing Partner',
+        subject: 'Confidential: VP Engineering candidate compensation package',
+        sender: {
+          name: 'Chloe Davis',
+          email: 'c.davis@horizon-talent.com',
+          avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=120&auto=format&fit=crop&q=80'
+        },
+        recipients: ['sarah.jenkins@horizon-ventures.com'],
+        messages: [
+          {
+            id: 'msg-3',
+            sender: 'Chloe Davis',
+            senderEmail: 'c.davis@horizon-talent.com',
+            timestamp: '8 hours ago',
+            body: 'Hi Sarah,\n\nStrictly confidential: We have concluded final rounds for the VP of Engineering search. Candidate David Park (ex-Stripe) is our consensus #1 choice.\n\nHis competing offer includes $380k base + 1.25% equity. We need your decision on whether to match this tier or adjust the equity grant before issuing the formal offer letter tomorrow morning.\n\nPlease review and let me know your decision.\n\nBest,\nChloe Davis',
+            isFromClient: false,
+            isFromAssistant: false
+          }
+        ],
+        classification: 'Client to Reply',
+        confidence: 98,
+        reasoning: 'Confidential compensation authorization: Sarah’s direct decision is needed to match or revise the $380k + equity package for a VP finalist.',
+        isOverridden: false,
+        overrideReason: '',
+        category: 'Approval',
+        priority: 'high',
+        isImportant: true,
+        isRead: false,
+        isArchived: false,
+        isCompleted: false,
+        waitingForResponse: false,
+        actionRequired: true,
+        summary: 'Head of Recruiting Chloe Davis seeks Sarah’s authorization on matching a $380k + 1.25% equity compensation package for VP Engineering finalist David Park.',
+        keyPoints: [
+          'Top candidate David Park (ex-Stripe) selected',
+          'Competing offer: $380k base + 1.25% equity',
+          'Urgent decision required before tomorrow morning’s offer issue'
+        ],
+        actionItems: [
+          { task: 'Decide on compensation match for VP candidate', assignee: 'Client', completed: false }
+        ],
+        detectedMeeting: { hasMeeting: false },
+        clientStatus: { viewedByClient: false, clientActionTaken: 'none', clientNotes: '' },
+        draftReply: { hasDraft: false, text: '', tone: 'professional' },
+        updatedAt: new Date(Date.now() - 8 * 3600 * 1000).toISOString()
+      },
+      {
+        threadId: 'th-104',
+        clientAccount: 'sarah.jenkins@horizon-ventures.com',
+        clientName: 'Sarah Jenkins',
+        clientTitle: 'Managing Partner',
+        subject: 'Vendor Agreement & W-9 Form for Suite 900 Office Space',
+        sender: {
+          name: 'Arthur Pendelton',
+          email: 'arthur@apex-facilities.com',
+          avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=120&auto=format&fit=crop&q=80'
+        },
+        recipients: ['sarah.jenkins@horizon-ventures.com'],
+        messages: [
+          {
+            id: 'msg-4',
+            sender: 'Arthur Pendelton',
+            senderEmail: 'arthur@apex-facilities.com',
+            timestamp: '12 hours ago',
+            body: 'Hello Sarah & Team,\n\nFollowing up on our lease finalization for Suite 900. Could you please have your office assistant forward your updated W-9 form and Certificate of Insurance (COI) so our property management team can issue building access badges before month end?\n\nThank you,\nArthur Pendelton',
+            isFromClient: false,
+            isFromAssistant: false
+          }
+        ],
+        classification: 'Assistant to Reply',
+        confidence: 94,
+        reasoning: 'Routine paperwork: Property management requests standard company W-9 and Certificate of Insurance which the assistant handles directly.',
+        isOverridden: false,
+        overrideReason: '',
+        category: 'Administrative',
+        priority: 'medium',
+        isImportant: false,
+        isRead: true,
+        isArchived: false,
+        isCompleted: false,
+        waitingForResponse: false,
+        actionRequired: true,
+        summary: 'Arthur Pendelton requests updated company W-9 and insurance certificate (COI) for Suite 900 building badge issuance.',
+        keyPoints: [
+          'Suite 900 lease finalization requirement',
+          'Requests W-9 and COI documents',
+          'Assistant can fulfill directly without client bottleneck'
+        ],
+        actionItems: [
+          { task: 'Attach W-9 and COI from operations vault and reply to Arthur', assignee: 'Assistant', completed: false }
+        ],
+        detectedMeeting: { hasMeeting: false },
+        clientStatus: { viewedByClient: false, clientActionTaken: 'none', clientNotes: '' },
+        draftReply: {
+          hasDraft: true,
+          text: "Hi Arthur,\n\nAlex here from Sarah's office. Please find attached our company W-9 form and the updated Certificate of Insurance (COI) for Suite 900.\n\nPlease let me know if any other documentation is needed for the badge issuance.\n\nBest,\nAlex | Executive Assistant",
+          tone: 'professional'
+        },
+        updatedAt: new Date(Date.now() - 12 * 3600 * 1000).toISOString()
+      },
+      {
+        threadId: 'th-105',
+        clientAccount: 'sarah.jenkins@horizon-ventures.com',
+        clientName: 'Sarah Jenkins',
+        clientTitle: 'Managing Partner',
+        subject: 'Following up: Product Demo Architecture Notes',
+        sender: {
+          name: 'Liam Chen',
+          email: 'liam@vertex-runtime.org',
+          avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=120&auto=format&fit=crop&q=80'
+        },
+        recipients: ['sarah.jenkins@horizon-ventures.com'],
+        messages: [
+          {
+            id: 'msg-5a',
+            sender: 'Liam Chen',
+            senderEmail: 'liam@vertex-runtime.org',
+            timestamp: '2 days ago',
+            body: 'Sarah, sending over our technical architecture diagrams as discussed.',
+            isFromClient: false,
+            isFromAssistant: false
+          },
+          {
+            id: 'msg-5b',
+            sender: 'Sarah Jenkins',
+            senderEmail: 'sarah.jenkins@horizon-ventures.com',
+            timestamp: '1 day ago',
+            body: 'Liam, reviewed the diagrams with our engineering partner. Could you run benchmarks on concurrent throughput under 10k requests/sec and send the telemetry log? Looking forward to seeing the numbers.',
+            isFromClient: true,
+            isFromAssistant: false
+          }
+        ],
+        classification: 'No Reply Needed',
+        confidence: 91,
+        reasoning: 'Waiting for response: Sarah sent the last message requesting throughput benchmarks; awaiting Liam’s engineering team.',
+        isOverridden: false,
+        overrideReason: '',
+        category: 'Follow-up',
+        priority: 'medium',
+        isImportant: false,
+        isRead: true,
+        isArchived: false,
+        isCompleted: false,
+        waitingForResponse: true,
+        actionRequired: false,
+        summary: 'Sarah sent outbound query requesting 10k req/sec benchmarks from Liam Chen. Awaiting counterparty reply.',
+        keyPoints: [
+          'Outbound inquiry sent 24h ago',
+          'Waiting on Liam for benchmark metrics',
+          'No action required from us until counterparty responds'
+        ],
+        actionItems: [
+          { task: 'Follow up if Liam does not reply by Friday', assignee: 'Assistant', completed: false }
+        ],
+        detectedMeeting: { hasMeeting: false },
+        clientStatus: { viewedByClient: false, clientActionTaken: 'none', clientNotes: '' },
+        draftReply: { hasDraft: false, text: '', tone: 'professional' },
+        updatedAt: new Date(Date.now() - 24 * 3600 * 1000).toISOString()
+      },
+      {
+        threadId: 'th-106',
+        clientAccount: 'sarah.jenkins@horizon-ventures.com',
+        clientName: 'Sarah Jenkins',
+        clientTitle: 'Managing Partner',
+        subject: 'Tech Leaders Weekly: Generative UI & Agentic AI Systems (#142)',
+        sender: {
+          name: 'Substack AI Radar',
+          email: 'newsletter@airadar.substack.com',
+          avatar: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=120&auto=format&fit=crop&q=80'
+        },
+        recipients: ['sarah.jenkins@horizon-ventures.com'],
+        messages: [
+          {
+            id: 'msg-6',
+            sender: 'Substack AI Radar',
+            senderEmail: 'newsletter@airadar.substack.com',
+            timestamp: '18 hours ago',
+            body: 'Tech Leaders Weekly #142:\n\nThis week in AI: Multi-agent ecosystems, automated email classification architectures, and the evolution of executive personal assistants. Plus: 10 startups breaking $10M ARR in the agentic workflow era.\n\nTo manage your subscription or unsubscribe, click here.',
+            isFromClient: false,
+            isFromAssistant: false
+          }
+        ],
+        classification: 'No Reply Needed',
+        confidence: 99,
+        reasoning: 'Newsletter / Broadcast: Automated publication with no recipient question or reply expected.',
+        isOverridden: false,
+        overrideReason: '',
+        category: 'Newsletter',
+        priority: 'low',
+        isImportant: false,
+        isRead: true,
+        isArchived: false,
+        isCompleted: true,
+        waitingForResponse: false,
+        actionRequired: false,
+        summary: 'Automated weekly edition of Substack AI Radar covering multi-agent ecosystems and executive workflows.',
+        keyPoints: [
+          'Weekly tech publication',
+          'No action or response needed',
+          'Auto-categorized as informative newsletter'
+        ],
+        actionItems: [],
+        detectedMeeting: { hasMeeting: false },
+        clientStatus: { viewedByClient: false, clientActionTaken: 'none', clientNotes: '' },
+        draftReply: { hasDraft: false, text: '', tone: 'professional' },
+        updatedAt: new Date(Date.now() - 18 * 3600 * 1000).toISOString()
+      },
+      {
+        threadId: 'th-107',
+        clientAccount: 'sarah.jenkins@horizon-ventures.com',
+        clientName: 'Sarah Jenkins',
+        clientTitle: 'Managing Partner',
+        subject: 'Keynote Invitation: Future of Frontier Models Summit (NYC)',
+        sender: {
+          name: 'Julian Vance',
+          email: 'julian@globaltechsummit.org',
+          avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=120&auto=format&fit=crop&q=80'
+        },
+        recipients: ['sarah.jenkins@horizon-ventures.com'],
+        messages: [
+          {
+            id: 'msg-7',
+            sender: 'Julian Vance',
+            senderEmail: 'julian@globaltechsummit.org',
+            timestamp: 'Yesterday',
+            body: 'Dear Sarah,\n\nOn behalf of the summit steering committee, we would be deeply honored to invite you as an Opening Keynote Speaker for the Frontier Models Summit on Dec 14th in New York City.\n\nWe have reserved a 25-minute fireside chat slot for you alongside DeepMind leadership. Could you please let us know if you are open to delivering this keynote?\n\nSincerely,\nJulian Vance\nConference Chairman',
+            isFromClient: false,
+            isFromAssistant: false
+          }
+        ],
+        classification: 'Client to Reply',
+        confidence: 93,
+        reasoning: 'High-profile public appearance: Keynote speaking invitation requiring Sarah’s personal confirmation on availability and topic acceptance.',
+        isOverridden: false,
+        overrideReason: '',
+        category: 'Approval',
+        priority: 'high',
+        isImportant: true,
+        isRead: false,
+        isArchived: false,
+        isCompleted: false,
+        waitingForResponse: false,
+        actionRequired: true,
+        summary: 'Julian Vance invites Sarah to deliver an Opening Keynote fireside chat alongside DeepMind leaders at the NYC Frontier Summit on Dec 14th.',
+        keyPoints: [
+          'High-profile opening keynote invitation',
+          'Dec 14th in New York City',
+          'Client personal decision required to accept or decline'
+        ],
+        actionItems: [
+          { task: 'Sarah to accept or decline keynote invitation', assignee: 'Client', completed: false }
+        ],
+        detectedMeeting: {
+          hasMeeting: true,
+          title: 'Opening Keynote: Frontier Models Summit',
+          date: 'Dec 14th',
+          time: '9:00 AM EST',
+          location: 'Lincoln Center, NYC',
+          duration: '25 mins'
+        },
+        clientStatus: { viewedByClient: false, clientActionTaken: 'none', clientNotes: '' },
+        draftReply: { hasDraft: false, text: '', tone: 'professional' },
+        updatedAt: new Date(Date.now() - 20 * 3600 * 1000).toISOString()
+      },
+      {
+        threadId: 'th-108',
+        clientAccount: 'sarah.jenkins@horizon-ventures.com',
+        clientName: 'Sarah Jenkins',
+        clientTitle: 'Managing Partner',
+        subject: 'Flight Confirmation: San Francisco (SFO) to New York (JFK)',
+        sender: {
+          name: 'Delta Air Lines',
+          email: 'ticketreceipt@delta.com',
+          avatar: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=120&auto=format&fit=crop&q=80'
+        },
+        recipients: ['sarah.jenkins@horizon-ventures.com'],
+        messages: [
+          {
+            id: 'msg-8',
+            sender: 'Delta Air Lines',
+            senderEmail: 'ticketreceipt@delta.com',
+            timestamp: '2 days ago',
+            body: 'Booking Confirmation: DL-884291\n\nPassenger: Jenkins, Sarah\nDeparture: Dec 12, 8:15 AM PST (SFO Terminal 2)\nArrival: Dec 12, 4:45 PM EST (JFK Terminal 4)\nSeat: 2A (First Class)\n\nThank you for flying with Delta.',
+            isFromClient: false,
+            isFromAssistant: false
+          }
+        ],
+        classification: 'No Reply Needed',
+        confidence: 99,
+        reasoning: 'Travel receipt: Informational flight confirmation automatically parsed for calendar and trip tracking.',
+        isOverridden: false,
+        overrideReason: '',
+        category: 'Informational',
+        priority: 'low',
+        isImportant: false,
+        isRead: true,
+        isArchived: false,
+        isCompleted: true,
+        waitingForResponse: false,
+        actionRequired: false,
+        summary: 'Delta Airlines flight confirmation DL-884291 for Sarah Jenkins (SFO to JFK on Dec 12, 8:15 AM PST).',
+        keyPoints: [
+          'Flight confirmed: SFO to JFK on Dec 12',
+          'Departure: 8:15 AM PST, Seat 2A',
+          'Assistant can track for airport transfer logistics'
+        ],
+        actionItems: [
+          { task: 'Add flight times and locator to Sarah’s master calendar', assignee: 'Assistant', completed: true }
+        ],
+        detectedMeeting: {
+          hasMeeting: true,
+          title: 'Flight DL-884291 (SFO to JFK)',
+          date: 'Dec 12th',
+          time: '8:15 AM PST',
+          location: 'SFO Terminal 2 -> JFK',
+          duration: '5h 30m'
+        },
+        clientStatus: { viewedByClient: false, clientActionTaken: 'none', clientNotes: '' },
+        draftReply: { hasDraft: false, text: '', tone: 'professional' },
+        updatedAt: new Date(Date.now() - 36 * 3600 * 1000).toISOString()
+      }
+    ];
+
+    // ==========================================
+    // 3. MAIN APPLICATION COMPONENT
+    // ==========================================
+    function MayaApp() {
+      // Global State
+      const [viewMode, setViewMode] = useState('assistant'); // 'assistant' | 'client'
+      const [accounts, setAccounts] = useState(() => {
+        const saved = localStorage.getItem('maya_accounts');
+        return saved ? JSON.parse(saved) : DEFAULT_ACCOUNTS;
+      });
+      const [activeAccount, setActiveAccount] = useState(accounts[0]);
+      const [emails, setEmails] = useState(() => {
+        const saved = localStorage.getItem('maya_emails');
+        return saved ? JSON.parse(saved) : INITIAL_EMAILS;
+      });
+
+      // Filter & Navigation State
+      const [activeTab, setActiveTab] = useState('assistant_reply'); // 'all' | 'assistant_reply' | 'client_reply' | 'action_required' | 'waiting' | 'meetings' | 'no_reply' | 'starred' | 'archived'
+      const [searchQuery, setSearchQuery] = useState('');
+      const [priorityFilter, setPriorityFilter] = useState('all');
+      const [selectedThreadId, setSelectedThreadId] = useState(INITIAL_EMAILS[0].threadId);
+
+      // Modals & Drawers
+      const [showOnboarding, setShowOnboarding] = useState(false);
+      const [showSimulator, setShowSimulator] = useState(false);
+      const [showAICopilot, setShowAICopilot] = useState(false);
+      const [toast, setToast] = useState(null);
+      const [isSyncing, setIsSyncing] = useState(false);
+
+      // Sync state to LocalStorage
+      useEffect(() => {
+        localStorage.setItem('maya_emails', JSON.stringify(emails));
+      }, [emails]);
+
+      useEffect(() => {
+        localStorage.setItem('maya_accounts', JSON.stringify(accounts));
+      }, [accounts]);
+
+      const showToastMessage = (message, type = 'success') => {
+        setToast({ message, type });
+        setTimeout(() => setToast(null), 3500);
+      };
+
+      // Trigger realistic Mailbox Sync
+      const handleSync = () => {
+        setIsSyncing(true);
+        setTimeout(() => {
+          setIsSyncing(false);
+          setAccounts(prev => prev.map(a => a.id === activeAccount.id ? { ...a, lastSynced: 'Just now' } : a));
+          showToastMessage(`Mailbox ${activeAccount.email} synchronized. All 8 threads verified with AI engine.`);
+        }, 800);
+      };
+
+      // Reset Demo Data
+      const handleResetDemo = () => {
+        setEmails(INITIAL_EMAILS);
+        setAccounts(DEFAULT_ACCOUNTS);
+        setActiveAccount(DEFAULT_ACCOUNTS[0]);
+        setSelectedThreadId(INITIAL_EMAILS[0].threadId);
+        showToastMessage('Demo dataset restored to initial state.');
+      };
+
+      // Computed Metrics
+      const stats = useMemo(() => {
+        const current = emails.filter(e => e.clientAccount === activeAccount.email);
+        return {
+          total: current.length,
+          unread: current.filter(e => !e.isRead && !e.isArchived).length,
+          assistantToReply: current.filter(e => e.classification === 'Assistant to Reply' && !e.isCompleted && !e.isArchived).length,
+          clientToReply: current.filter(e => e.classification === 'Client to Reply' && !e.isCompleted && !e.isArchived).length,
+          actionRequired: current.filter(e => e.actionRequired && !e.isCompleted && !e.isArchived).length,
+          waitingForResponse: current.filter(e => e.waitingForResponse && !e.isArchived).length,
+          meetingsCount: current.filter(e => e.detectedMeeting && e.detectedMeeting.hasMeeting && !e.isArchived).length,
+          noReplyNeeded: current.filter(e => e.classification === 'No Reply Needed' && !e.isArchived).length
+        };
+      }, [emails, activeAccount]);
+
+      // Filtered Emails
+      const filteredEmails = useMemo(() => {
+        return emails.filter(email => {
+          if (email.clientAccount !== activeAccount.email) return false;
+
+          // Tab Filter
+          if (activeTab === 'assistant_reply' && (email.classification !== 'Assistant to Reply' || email.isCompleted || email.isArchived)) return false;
+          if (activeTab === 'client_reply' && (email.classification !== 'Client to Reply' || email.isCompleted || email.isArchived)) return false;
+          if (activeTab === 'action_required' && (!email.actionRequired || email.isCompleted || email.isArchived)) return false;
+          if (activeTab === 'waiting' && (!email.waitingForResponse || email.isArchived)) return false;
+          if (activeTab === 'meetings' && (!email.detectedMeeting?.hasMeeting || email.isArchived)) return false;
+          if (activeTab === 'no_reply' && (email.classification !== 'No Reply Needed' || email.isArchived)) return false;
+          if (activeTab === 'starred' && (!email.isImportant || email.isArchived)) return false;
+          if (activeTab === 'archived' && !email.isArchived) return false;
+          if (activeTab === 'all' && email.isArchived) return false;
+
+          // Priority Filter
+          if (priorityFilter !== 'all' && email.priority !== priorityFilter) return false;
+
+          // Search Query
+          if (searchQuery.trim()) {
+            const q = searchQuery.toLowerCase();
+            const matchesSubject = email.subject.toLowerCase().includes(q);
+            const matchesSender = email.sender.name.toLowerCase().includes(q) || email.sender.email.toLowerCase().includes(q);
+            const matchesSummary = email.summary.toLowerCase().includes(q);
+            if (!matchesSubject && !matchesSender && !matchesSummary) return false;
+          }
+
+          return true;
+        });
+      }, [emails, activeAccount, activeTab, priorityFilter, searchQuery]);
+
+      // Selected Thread Object
+      const selectedThread = useMemo(() => {
+        return emails.find(e => e.threadId === selectedThreadId) || filteredEmails[0] || emails[0];
+      }, [emails, selectedThreadId, filteredEmails]);
+
+      // Update email handlers
+      const handleOverrideClassification = (threadId, newClass) => {
+        setEmails(prev => prev.map(e => {
+          if (e.threadId === threadId) {
+            return {
+              ...e,
+              classification: newClass,
+              isOverridden: true,
+              overrideReason: `Manually changed by Assistant to ${newClass}`,
+              updatedAt: new Date().toISOString()
+            };
+          }
+          return e;
+        }));
+        showToastMessage(`Updated classification to "${newClass}"`);
+      };
+
+      const handleToggleStar = (threadId) => {
+        setEmails(prev => prev.map(e => e.threadId === threadId ? { ...e, isImportant: !e.isImportant } : e));
+      };
+
+      const handleToggleRead = (threadId) => {
+        setEmails(prev => prev.map(e => e.threadId === threadId ? { ...e, isRead: !e.isRead } : e));
+      };
+
+      const handleArchive = (threadId) => {
+        setEmails(prev => prev.map(e => e.threadId === threadId ? { ...e, isArchived: !e.isArchived } : e));
+        showToastMessage('Thread archived.');
+      };
+
+      const handleSendReply = (threadId, replyText) => {
+        setEmails(prev => prev.map(e => {
+          if (e.threadId === threadId) {
+            const newMsg = {
+              id: `msg-${Date.now()}`,
+              sender: 'Alex (Executive Assistant)',
+              senderEmail: activeAccount.email,
+              timestamp: 'Just now',
+              body: replyText,
+              isFromClient: false,
+              isFromAssistant: true
+            };
+            return {
+              ...e,
+              messages: [...e.messages, newMsg],
+              classification: 'No Reply Needed',
+              waitingForResponse: true,
+              actionRequired: false,
+              reasoning: 'Response sent by Executive Assistant. Thread now awaiting counterparty.',
+              draftReply: { hasDraft: false, text: '', tone: 'professional' },
+              updatedAt: new Date().toISOString()
+            };
+          }
+          return e;
+        }));
+
+        if (window.confetti) {
+          window.confetti({ particleCount: 60, spread: 60, origin: { y: 0.8 } });
+        }
+        showToastMessage('Reply reviewed, approved, and sent successfully!');
+      };
+
+      // Client-Facing Actions
+      const handleClientHandled = (threadId) => {
+        setEmails(prev => prev.map(e => {
+          if (e.threadId === threadId) {
+            return {
+              ...e,
+              isCompleted: true,
+              classification: 'No Reply Needed',
+              reasoning: 'Marked as personally resolved by Client.',
+              clientStatus: {
+                viewedByClient: true,
+                clientActionTaken: 'handled',
+                clientNotes: 'Client resolved personally.'
+              },
+              updatedAt: new Date().toISOString()
+            };
+          }
+          return e;
+        }));
+
+        if (window.confetti) {
+          window.confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
+        }
+        showToastMessage('Marked as handled! Assistant dashboard synchronized.');
+      };
+
+      const handleClientDelegate = (threadId, notes) => {
+        setEmails(prev => prev.map(e => {
+          if (e.threadId === threadId) {
+            return {
+              ...e,
+              classification: 'Assistant to Reply',
+              reasoning: `Client delegated to Assistant with instruction: "${notes || 'Please handle this.'}"`,
+              isOverridden: true,
+              overrideReason: `Delegated by Client: ${notes || 'Please handle'}`,
+              actionRequired: true,
+              clientStatus: {
+                viewedByClient: true,
+                clientActionTaken: 'delegated_to_assistant',
+                clientNotes: notes || 'Client requested assistant to take over.'
+              },
+              updatedAt: new Date().toISOString()
+            };
+          }
+          return e;
+        }));
+        showToastMessage('Delegated to assistant Alex with your instructions.');
+      };
+
+      // Inbound Simulator Generator
+      const handleSimulateInbound = (scenario) => {
+        const scenarios = {
+          client_urgent: {
+            subject: 'Emergency Board Resolution: Liquidity Facility Sign-off ($15M)',
+            sender: {
+              name: 'Victoria Sterling',
+              email: 'vsterling@apex-partners.com',
+              avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120&auto=format&fit=crop&q=80'
+            },
+            body: 'Sarah,\n\nWe require your immediate executive approval and digital signature on the bridge facility addendum before market close today. Please review the attached execution agreement and reply with your sign-off.\n\nRegards,\nVictoria Sterling',
+            classification: 'Client to Reply',
+            confidence: 98,
+            reasoning: 'Executive authorization required: Sender explicitly asks for Sarah’s emergency sign-off on the $15M liquidity bridge facility before market close.',
+            category: 'Approval',
+            priority: 'high',
+            summary: 'Victoria Sterling requests Sarah’s immediate executive signature on the $15M liquidity facility addendum before today’s market close.'
+          },
+          assistant_schedule: {
+            subject: 'Reschedule: Product Design Review with Figma Team',
+            sender: {
+              name: 'Derek Lin',
+              email: 'derek@designcraft.io',
+              avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=120&auto=format&fit=crop&q=80'
+            },
+            body: 'Hi Sarah,\n\nSomething urgent came up on our end for this Thursday. Could your assistant help find 45 minutes next Monday or Tuesday afternoon to reschedule our product review?\n\nThanks,\nDerek Lin',
+            classification: 'Assistant to Reply',
+            confidence: 96,
+            reasoning: 'Meeting reschedule request: Derek Lin asks Sarah’s assistant to coordinate a 45-minute reschedule slot for next week.',
+            category: 'Scheduling',
+            priority: 'high',
+            summary: 'Derek Lin requests assistant to reschedule product review for 45 minutes next Monday or Tuesday.'
+          },
+          automated_receipt: {
+            subject: 'AWS Invoice & Cloud Spend Statement - October 2026',
+            sender: {
+              name: 'Amazon Web Services',
+              email: 'no-reply@amazon.com',
+              avatar: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=120&auto=format&fit=crop&q=80'
+            },
+            body: 'Your monthly AWS billing statement for account 992-184-291 is now ready for viewing. Total charged: $4,281.40. Auto-billed to corporate card ending in 4019. No action required.',
+            classification: 'No Reply Needed',
+            confidence: 99,
+            reasoning: 'Automated receipt: Informational notification with no question or follow-up needed.',
+            category: 'Informational',
+            priority: 'low',
+            summary: 'Monthly AWS billing receipt of $4,281.40 automatically charged to corporate card.'
+          }
+        };
+
+        const chosen = scenarios[scenario] || scenarios.client_urgent;
+        const newThread = {
+          threadId: `th-sim-${Date.now()}`,
+          clientAccount: activeAccount.email,
+          clientName: activeAccount.clientName,
+          clientTitle: activeAccount.clientTitle,
+          subject: chosen.subject,
+          sender: chosen.sender,
+          recipients: [activeAccount.email],
+          messages: [
+            {
+              id: `msg-${Date.now()}`,
+              sender: chosen.sender.name,
+              senderEmail: chosen.sender.email,
+              timestamp: 'Just now',
+              body: chosen.body,
+              isFromClient: false,
+              isFromAssistant: false
+            }
+          ],
+          classification: chosen.classification,
+          confidence: chosen.confidence,
+          reasoning: chosen.reasoning,
+          isOverridden: false,
+          overrideReason: '',
+          category: chosen.category,
+          priority: chosen.priority,
+          isImportant: chosen.priority === 'high',
+          isRead: false,
+          isArchived: false,
+          isCompleted: false,
+          waitingForResponse: false,
+          actionRequired: chosen.classification !== 'No Reply Needed',
+          summary: chosen.summary,
+          keyPoints: ['Inbound email simulated in real time', `AI Classified as: ${chosen.classification} (${chosen.confidence}%)`],
+          actionItems: chosen.classification === 'Assistant to Reply' 
+            ? [{ task: 'Coordinate requested meeting time', assignee: 'Assistant', completed: false }]
+            : [{ task: 'Review and provide decision', assignee: 'Client', completed: false }],
+          detectedMeeting: chosen.category === 'Scheduling' 
+            ? { hasMeeting: true, title: chosen.subject, date: 'Next Monday or Tuesday', time: 'Afternoon (45 mins)', location: 'Zoom / Figma' } 
+            : { hasMeeting: false },
+          clientStatus: { viewedByClient: false, clientActionTaken: 'none', clientNotes: '' },
+          draftReply: {
+            hasDraft: chosen.classification === 'Assistant to Reply',
+            text: chosen.classification === 'Assistant to Reply' ? `Hi Derek,\n\nAlex here for Sarah. Happy to reschedule! Monday at 2:00 PM EST or Tuesday at 3:30 PM EST are open.\n\nBest,\nAlex` : '',
+            tone: 'scheduling'
+          },
+          updatedAt: new Date().toISOString()
+        };
+
+        setEmails(prev => [newThread, ...prev]);
+        setSelectedThreadId(newThread.threadId);
+        setShowSimulator(false);
+        showToastMessage(`Inbound email received! AI classified as "${chosen.classification}" (${chosen.confidence}% confidence)`);
+      };
+
+      return (
+        <div className="min-h-screen flex flex-col bg-[#f8fafc]">
+          
+          {/* TOAST NOTIFICATION */}
+          {toast && (
+            <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-2xl bg-slate-900 text-white border border-slate-700 animate-bounce text-sm font-medium">
+              <Icon name="check-circle" className="w-5 h-5 text-emerald-400" />
+              <span>{toast.message}</span>
+            </div>
+          )}
+
+          {/* TOP GLOBAL BAR */}
+          <header className="sticky top-0 z-40 w-full glass-nav border-b border-slate-200 shadow-subtle">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+              
+              {/* BRAND LOGO */}
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-700 via-brand-600 to-indigo-500 flex items-center justify-center text-white shadow-glow-purple">
+                  <Icon name="sparkles" className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-extrabold text-xl tracking-tight bg-gradient-to-r from-slate-950 via-brand-900 to-brand-700 bg-clip-text text-transparent">Maya AI</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-brand-100 text-brand-700 border border-brand-200">Executive OS</span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 font-medium hidden sm:block">Intelligent Email Management for High-Impact Assistants</p>
+                </div>
+              </div>
+
+              {/* CENTER: DUAL-VIEW TOGGLE (Assistant vs Client) */}
+              <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+                <button
+                  onClick={() => setViewMode('assistant')}
+                  className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    viewMode === 'assistant'
+                      ? 'bg-white text-brand-700 shadow-sm border border-slate-200/60'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <Icon name="user-check" className="w-3.5 h-3.5" />
+                  <span>Assistant Workspace</span>
+                  {stats.assistantToReply > 0 && (
+                    <span className="bg-brand-600 text-white text-[10px] px-1.5 py-0.2 rounded-full font-bold">
+                      {stats.assistantToReply}
+                    </span>
+                  )}
+                </button>
+
+                <button
+                  onClick={() => setViewMode('client')}
+                  className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    viewMode === 'client'
+                      ? 'bg-slate-900 text-white shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <Icon name="user" className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Client Zen View</span>
+                  {stats.clientToReply > 0 && (
+                    <span className="bg-amber-500 text-slate-950 text-[10px] px-1.5 py-0.2 rounded-full font-bold">
+                      {stats.clientToReply}
+                    </span>
+                  )}
+                </button>
+              </div>
+
+              {/* RIGHT ACTIONS: Account Picker, Simulator, AI Copilot */}
+              <div className="flex items-center gap-2 sm:gap-3">
+                
+                {/* INBOUND SIMULATOR BUTTON */}
+                <button
+                  onClick={() => setShowSimulator(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100 transition shadow-subtle"
+                  title="Test how AI auto-classifies live incoming emails"
+                >
+                  <Icon name="zap" className="w-3.5 h-3.5 text-amber-600" />
+                  <span className="hidden md:inline">Simulate Inbound</span>
+                </button>
+
+                {/* ASK AI COPILOT BUTTON */}
+                <button
+                  onClick={() => setShowAICopilot(true)}
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-brand-600 to-indigo-600 text-white shadow-glow-purple hover:opacity-95 transition"
+                >
+                  <Icon name="sparkles" className="w-3.5 h-3.5 text-amber-300" />
+                  <span className="hidden sm:inline">Ask Maya AI</span>
+                </button>
+
+                {/* ACCOUNT PICKER & SYNC */}
+                <div className="relative group">
+                  <button className="flex items-center gap-2 pl-2 pr-3 py-1 rounded-xl border border-slate-200 hover:border-slate-300 bg-white transition shadow-subtle">
+                    <img src={activeAccount.avatar} alt="Avatar" className="w-7 h-7 rounded-full object-cover border border-brand-200" />
+                    <div className="text-left hidden lg:block">
+                      <p className="text-xs font-semibold text-slate-800 leading-tight">{activeAccount.clientName}</p>
+                      <p className="text-[10px] text-slate-500 leading-none">{activeAccount.provider === 'google' ? 'Gmail / Workspace' : 'Outlook 365'}</p>
+                    </div>
+                    <Icon name="chevron-down" className="w-3.5 h-3.5 text-slate-400 ml-1" />
+                  </button>
+
+                  {/* Dropdown Menu */}
+                  <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-elevated border border-slate-100 p-2 hidden group-hover:block z-50">
+                    <div className="px-3 py-2 border-b border-slate-100">
+                      <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Connected Accounts</p>
+                    </div>
+                    {accounts.map(acc => (
+                      <button
+                        key={acc.id}
+                        onClick={() => setActiveAccount(acc)}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-xs transition ${
+                          acc.id === activeAccount.id ? 'bg-brand-50 text-brand-900 font-semibold' : 'hover:bg-slate-50 text-slate-700'
+                        }`}
+                      >
+                        <img src={acc.avatar} className="w-6 h-6 rounded-full" />
+                        <div className="flex-1 truncate">
+                          <p className="truncate font-medium">{acc.clientName}</p>
+                          <p className="text-[10px] text-slate-400 truncate">{acc.email}</p>
+                        </div>
+                        {acc.id === activeAccount.id && <Icon name="check" className="w-4 h-4 text-brand-600" />}
+                      </button>
+                    ))}
+
+                    <div className="pt-2 border-t border-slate-100 mt-1 flex flex-col gap-1">
+                      <button
+                        onClick={() => setShowOnboarding(true)}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold text-brand-700 hover:bg-brand-50 rounded-xl transition"
+                      >
+                        <Icon name="plus" className="w-3.5 h-3.5" />
+                        <span>Connect Another Email</span>
+                      </button>
+                      <button
+                        onClick={handleSync}
+                        className="w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 rounded-xl transition"
+                      >
+                        <span className="flex items-center gap-2">
+                          <Icon name="refresh" className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin text-brand-600' : ''}`} />
+                          <span>Sync Current Mailbox</span>
+                        </span>
+                        <span className="text-[10px] text-emerald-600 font-semibold">Active</span>
+                      </button>
+                      <button
+                        onClick={handleResetDemo}
+                        className="w-full text-left px-3 py-1.5 text-[11px] text-rose-500 hover:bg-rose-50 rounded-lg transition"
+                      >
+                        Reset Demo Data
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </header>
+
+          {/* MAIN BODY: SWITCHES BETWEEN ASSISTANT WORKSPACE AND CLIENT ZEN VIEW */}
+          {viewMode === 'assistant' ? (
+            <AssistantWorkspace
+              stats={stats}
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+              priorityFilter={priorityFilter}
+              setPriorityFilter={setPriorityFilter}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              filteredEmails={filteredEmails}
+              selectedThread={selectedThread}
+              setSelectedThreadId={setSelectedThreadId}
+              onOverrideClassification={handleOverrideClassification}
+              onToggleStar={handleToggleStar}
+              onToggleRead={handleToggleRead}
+              onArchive={handleArchive}
+              onSendReply={handleSendReply}
+              onSync={handleSync}
+              isSyncing={isSyncing}
+              activeAccount={activeAccount}
+            />
+          ) : (
+            <ClientPortal
+              emails={emails.filter(e => e.clientAccount === activeAccount.email)}
+              activeAccount={activeAccount}
+              onHandled={handleClientHandled}
+              onDelegate={handleClientDelegate}
+              onSwitchToAssistant={() => setViewMode('assistant')}
+            />
+          )}
+
+          {/* ONBOARDING / ACCOUNT CONNECTION MODAL */}
+          {showOnboarding && (
+            <OnboardingModal
+              onClose={() => setShowOnboarding(false)}
+              onAccountConnected={(newAcc) => {
+                setAccounts(prev => [...prev, newAcc]);
+                setActiveAccount(newAcc);
+                setShowOnboarding(false);
+                showToastMessage(`Connected ${newAcc.email} and synchronized.`);
+              }}
+            />
+          )}
+
+          {/* INBOUND EMAIL SIMULATOR MODAL */}
+          {showSimulator && (
+            <InboundSimulatorModal
+              onClose={() => setShowSimulator(false)}
+              onSimulate={handleSimulateInbound}
+            />
+          )}
+
+          {/* AI COPILOT CHAT DRAWER */}
+          {showAICopilot && (
+            <AICopilotDrawer
+              onClose={() => setShowAICopilot(false)}
+              emails={emails.filter(e => e.clientAccount === activeAccount.email)}
+              onOpenThread={(tId) => {
+                setSelectedThreadId(tId);
+                setShowAICopilot(false);
+                setViewMode('assistant');
+              }}
+            />
+          )}
+
+        </div>
+      );
+    }
+
+    // ==========================================
+    // 4. ASSISTANT WORKSPACE (Main Dashboard)
+    // ==========================================
+    function AssistantWorkspace({
+      stats,
+      activeTab,
+      setActiveTab,
+      priorityFilter,
+      setPriorityFilter,
+      searchQuery,
+      setSearchQuery,
+      filteredEmails,
+      selectedThread,
+      setSelectedThreadId,
+      onOverrideClassification,
+      onToggleStar,
+      onToggleRead,
+      onArchive,
+      onSendReply,
+      onSync,
+      isSyncing,
+      activeAccount
+    }) {
+      return (
+        <div className="flex-1 flex flex-col max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5">
+          
+          {/* STATS OVERVIEW CARDS */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 mb-5">
+            
+            <StatCard
+              label="Total Inbox"
+              value={stats.total}
+              icon="mail"
+              active={activeTab === 'all'}
+              onClick={() => setActiveTab('all')}
+              color="slate"
+            />
+            
+            <StatCard
+              label="Assistant to Reply"
+              value={stats.assistantToReply}
+              icon="user-check"
+              active={activeTab === 'assistant_reply'}
+              onClick={() => setActiveTab('assistant_reply')}
+              color="purple"
+              highlight="Work Queue"
+            />
+
+            <StatCard
+              label="Client to Reply"
+              value={stats.clientToReply}
+              icon="alert-circle"
+              active={activeTab === 'client_reply'}
+              onClick={() => setActiveTab('client_reply')}
+              color="amber"
+              highlight="Escalated"
+            />
+
+            <StatCard
+              label="Action Required"
+              value={stats.actionRequired}
+              icon="zap"
+              active={activeTab === 'action_required'}
+              onClick={() => setActiveTab('action_required')}
+              color="rose"
+            />
+
+            <StatCard
+              label="Waiting on Others"
+              value={stats.waitingForResponse}
+              icon="clock"
+              active={activeTab === 'waiting'}
+              onClick={() => setActiveTab('waiting')}
+              color="blue"
+            />
+
+            <StatCard
+              label="Meetings Detected"
+              value={stats.meetingsCount}
+              icon="calendar"
+              active={activeTab === 'meetings'}
+              onClick={() => setActiveTab('meetings')}
+              color="emerald"
+            />
+
+            <StatCard
+              label="No Reply Needed"
+              value={stats.noReplyNeeded}
+              icon="check-circle"
+              active={activeTab === 'no_reply'}
+              onClick={() => setActiveTab('no_reply')}
+              color="gray"
+            />
+
+          </div>
+
+          {/* MAIN 3-PANE LAYOUT: Sidebar Tabs, Email List, and Detail Conversation Pane */}
+          <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-5 min-h-[640px]">
+            
+            {/* LEFT / SUB-NAV: Quick Segments */}
+            <div className="lg:col-span-3 flex flex-col gap-4">
+              
+              <div className="bg-white rounded-2xl border border-slate-200/80 p-3 shadow-subtle">
+                <div className="px-3 py-2 flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Smart Inboxes</span>
+                  <button onClick={onSync} title="Synchronize with mail server" className="text-slate-400 hover:text-brand-600 transition">
+                    <Icon name="refresh" className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin text-brand-600' : ''}`} />
+                  </button>
+                </div>
+
+                <nav className="flex flex-col gap-1">
+                  <NavTabItem
+                    label="Assistant to Reply"
+                    icon="user-check"
+                    count={stats.assistantToReply}
+                    active={activeTab === 'assistant_reply'}
+                    onClick={() => setActiveTab('assistant_reply')}
+                    badgeColor="bg-purple-100 text-purple-800 border-purple-200"
+                  />
+                  <NavTabItem
+                    label="Client to Reply"
+                    icon="alert-circle"
+                    count={stats.clientToReply}
+                    active={activeTab === 'client_reply'}
+                    onClick={() => setActiveTab('client_reply')}
+                    badgeColor="bg-amber-100 text-amber-800 border-amber-200"
+                  />
+                  <NavTabItem
+                    label="All Inbox"
+                    icon="mail"
+                    count={stats.total}
+                    active={activeTab === 'all'}
+                    onClick={() => setActiveTab('all')}
+                  />
+                  <NavTabItem
+                    label="Action Required"
+                    icon="zap"
+                    count={stats.actionRequired}
+                    active={activeTab === 'action_required'}
+                    onClick={() => setActiveTab('action_required')}
+                  />
+                  <NavTabItem
+                    label="Waiting for Response"
+                    icon="clock"
+                    count={stats.waitingForResponse}
+                    active={activeTab === 'waiting'}
+                    onClick={() => setActiveTab('waiting')}
+                  />
+                  <NavTabItem
+                    label="Meetings & Bookings"
+                    icon="calendar"
+                    count={stats.meetingsCount}
+                    active={activeTab === 'meetings'}
+                    onClick={() => setActiveTab('meetings')}
+                  />
+                  <NavTabItem
+                    label="No Reply Needed"
+                    icon="check-circle"
+                    count={stats.noReplyNeeded}
+                    active={activeTab === 'no_reply'}
+                    onClick={() => setActiveTab('no_reply')}
+                  />
+                  <NavTabItem
+                    label="Starred / Important"
+                    icon="star"
+                    active={activeTab === 'starred'}
+                    onClick={() => setActiveTab('starred')}
+                  />
+                  <NavTabItem
+                    label="Archive"
+                    icon="archive"
+                    active={activeTab === 'archived'}
+                    onClick={() => setActiveTab('archived')}
+                  />
+                </nav>
+              </div>
+
+              {/* UPCOMING DETECTED MEETINGS WIDGET */}
+              <UpcomingMeetingsWidget
+                emails={filteredEmails}
+                onSelectThread={(id) => setSelectedThreadId(id)}
+              />
+
+            </div>
+
+            {/* MIDDLE PANE: Email Thread List */}
+            <div className="lg:col-span-4 bg-white rounded-2xl border border-slate-200/80 shadow-subtle flex flex-col overflow-hidden">
+              
+              {/* Search & Filter Header */}
+              <div className="p-3.5 border-b border-slate-100 flex flex-col gap-2.5">
+                <div className="relative">
+                  <Icon name="search" className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search sender, subject, AI notes..."
+                    className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition"
+                  />
+                  {searchQuery && (
+                    <button onClick={() => setSearchQuery('')} className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600">
+                      <Icon name="x" className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between text-[11px] text-slate-500">
+                  <span className="font-medium">{filteredEmails.length} conversation{filteredEmails.length === 1 ? '' : 's'}</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-slate-400">Priority:</span>
+                    <select
+                      value={priorityFilter}
+                      onChange={(e) => setPriorityFilter(e.target.value)}
+                      className="bg-transparent font-semibold text-slate-700 outline-none cursor-pointer"
+                    >
+                      <option value="all">All</option>
+                      <option value="high">High</option>
+                      <option value="medium">Medium</option>
+                      <option value="low">Low</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Email Cards Scrollable List */}
+              <div className="flex-1 overflow-y-auto divide-y divide-slate-100 max-h-[720px]">
+                {filteredEmails.length === 0 ? (
+                  <div className="p-10 text-center flex flex-col items-center justify-center text-slate-400">
+                    <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-3">
+                      <Icon name="check-circle" className="w-6 h-6 text-slate-400" />
+                    </div>
+                    <p className="text-sm font-semibold text-slate-700">No emails in this segment</p>
+                    <p className="text-xs text-slate-500 mt-1 max-w-xs">Everything has been triaged, delegated, or filed.</p>
+                  </div>
+                ) : (
+                  filteredEmails.map(thread => (
+                    <EmailCard
+                      key={thread.threadId}
+                      thread={thread}
+                      isSelected={selectedThread?.threadId === thread.threadId}
+                      onSelect={() => setSelectedThreadId(thread.threadId)}
+                      onToggleStar={(e) => { e.stopPropagation(); onToggleStar(thread.threadId); }}
+                    />
+                  ))
+                )}
+              </div>
+
+            </div>
+
+            {/* RIGHT PANE: Selected Conversation History & AI Intelligence */}
+            <div className="lg:col-span-5 bg-white rounded-2xl border border-slate-200/80 shadow-subtle flex flex-col overflow-hidden">
+              {selectedThread ? (
+                <ConversationDetail
+                  thread={selectedThread}
+                  onOverrideClassification={onOverrideClassification}
+                  onToggleStar={onToggleStar}
+                  onToggleRead={onToggleRead}
+                  onArchive={onArchive}
+                  onSendReply={onSendReply}
+                />
+              ) : (
+                <div className="p-12 text-center text-slate-400 flex flex-col items-center justify-center h-full">
+                  <Icon name="mail" className="w-10 h-10 text-slate-300 mb-2" />
+                  <p className="text-sm font-medium">Select an email conversation to view</p>
+                </div>
+              )}
+            </div>
+
+          </div>
+
+        </div>
+      );
+    }
+
+    // ==========================================
+    // 5. EMAIL LIST CARD ITEM
+    // ==========================================
+    function EmailCard({ thread, isSelected, onSelect, onToggleStar }) {
+      const isClientReply = thread.classification === 'Client to Reply';
+      const isAssistantReply = thread.classification === 'Assistant to Reply';
+
+      return (
+        <div
+          onClick={onSelect}
+          className={`p-3.5 cursor-pointer transition relative border-l-4 ${
+            isSelected
+              ? 'bg-brand-50/60 border-l-brand-600'
+              : !thread.isRead
+                ? 'bg-white border-l-brand-400 hover:bg-slate-50/80'
+                : 'bg-white border-l-transparent hover:bg-slate-50'
+          }`}
+        >
+          {/* Header row: Sender & Date */}
+          <div className="flex items-center justify-between gap-2 mb-1">
+            <div className="flex items-center gap-2 truncate">
+              <img src={thread.sender.avatar} className="w-5 h-5 rounded-full object-cover shrink-0" />
+              <span className={`text-xs truncate ${!thread.isRead ? 'font-bold text-slate-900' : 'font-semibold text-slate-700'}`}>
+                {thread.sender.name}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="text-[10px] text-slate-400">
+                {thread.messages && thread.messages.length > 0 ? thread.messages[thread.messages.length - 1].timestamp : 'Today'}
+              </span>
+              <button onClick={onToggleStar} className="text-slate-300 hover:text-amber-400 transition">
+                <Icon name={thread.isImportant ? "star" : "star-outline"} className={`w-3.5 h-3.5 ${thread.isImportant ? 'text-amber-400 fill-amber-400' : ''}`} />
+              </button>
+            </div>
+          </div>
+
+          {/* Subject Line */}
+          <p className={`text-xs mb-1 truncate ${!thread.isRead ? 'font-bold text-slate-900' : 'text-slate-700 font-medium'}`}>
+            {thread.subject}
+          </p>
+
+          {/* 1-Line AI Summary Snippet */}
+          <p className="text-[11px] text-slate-500 line-clamp-1 mb-2 font-normal">
+            {thread.summary || (thread.messages[0] ? thread.messages[0].body.slice(0, 90) : '')}
+          </p>
+
+          {/* AI Responsibility Badge & Metadata Tags */}
+          <div className="flex items-center justify-between gap-1 flex-wrap">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {isClientReply && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-200">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                  Client to Reply
+                </span>
+              )}
+
+              {isAssistantReply && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-100 text-purple-900 border border-purple-200">
+                  <Icon name="user-check" className="w-2.5 h-2.5 text-purple-700" />
+                  Assistant to Reply
+                </span>
+              )}
+
+              {!isClientReply && !isAssistantReply && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200">
+                  No Reply Needed
+                </span>
+              )}
+
+              {thread.category && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-medium">
+                  {thread.category}
+                </span>
+              )}
+            </div>
+
+            {/* Confidence indicator */}
+            <span className="text-[10px] text-slate-400 font-mono">
+              {thread.confidence}% AI
+            </span>
+          </div>
+
+        </div>
+      );
+    }
+
+    // ==========================================
+    // 6. CONVERSATION DETAIL & AI INTELLIGENCE PANE
+    // ==========================================
+    function ConversationDetail({
+      thread,
+      onOverrideClassification,
+      onToggleStar,
+      onToggleRead,
+      onArchive,
+      onSendReply
+    }) {
+      const [replyDraftText, setReplyDraftText] = useState(thread.draftReply?.text || '');
+      const [activeTone, setActiveTone] = useState(thread.draftReply?.tone || 'professional');
+      const [showToneDropdown, setShowToneDropdown] = useState(false);
+      const [showClassDropdown, setShowClassDropdown] = useState(false);
+
+      useEffect(() => {
+        setReplyDraftText(thread.draftReply?.text || '');
+        setActiveTone(thread.draftReply?.tone || 'professional');
+      }, [thread]);
+
+      // Handle tone switch
+      const handleToneChange = (tone) => {
+        setActiveTone(tone);
+        setShowToneDropdown(false);
+        const sender = thread.sender.name.split(' ')[0];
+        const clientName = thread.clientName || 'Sarah';
+        
+        let sample = '';
+        if (tone === 'scheduling') {
+          sample = `Hi ${sender},\n\nI manage Sarah's calendar. She would love to connect! Here are a couple of 30-min options next week:\n\n• Tuesday at 2:00 PM EST\n• Wednesday at 11:30 AM EST\n\nPlease let me know if either works and I will send a calendar invite.\n\nBest,\nAlex (EA to Sarah)`;
+        } else if (tone === 'direct') {
+          sample = `Hi ${sender},\n\nThanks for sending this over. We reviewed the details and agree with the proposed direction. We will follow up with formal confirmation shortly.\n\nBest,\n${clientName}`;
+        } else if (tone === 'warm') {
+          sample = `Hi ${sender},\n\nGreat hearing from you! Really excited about this initiative. Let's touch base soon to finalize everything.\n\nWarmly,\n${clientName}`;
+        } else if (tone === 'decline') {
+          sample = `Hi ${sender},\n\nThank you for reaching out. Unfortunately, due to full bandwidth, Sarah is unable to commit to this at this time. We appreciate your consideration and wish you continued success.\n\nBest,\nAlex on behalf of ${clientName}`;
+        } else {
+          sample = `Hi ${sender},\n\nThank you for your email regarding ${thread.subject}.\n\nWe have received your message and are currently reviewing. We will follow up with full details by tomorrow.\n\nSincerely,\n${clientName}`;
+        }
+        setReplyDraftText(sample);
+      };
+
+      const isClientReply = thread.classification === 'Client to Reply';
+      const isAssistantReply = thread.classification === 'Assistant to Reply';
+
+      return (
+        <div className="flex-1 flex flex-col h-full overflow-hidden">
+          
+          {/* Thread Header Bar */}
+          <div className="p-4 border-b border-slate-200/80 flex items-center justify-between gap-3 bg-white">
+            <div className="truncate flex-1">
+              <h2 className="text-sm font-bold text-slate-900 truncate">{thread.subject}</h2>
+              <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-500">
+                <span>From: <strong className="text-slate-700">{thread.sender.name}</strong></span>
+                <span>•</span>
+                <span className="text-[11px] font-mono text-slate-400">{thread.sender.email}</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                onClick={() => onToggleStar(thread.threadId)}
+                title={thread.isImportant ? "Starred" : "Star email"}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-amber-500 hover:bg-slate-100 transition"
+              >
+                <Icon name={thread.isImportant ? "star" : "star-outline"} className={`w-4 h-4 ${thread.isImportant ? 'text-amber-400 fill-amber-400' : ''}`} />
+              </button>
+              <button
+                onClick={() => onToggleRead(thread.threadId)}
+                title={thread.isRead ? "Mark Unread" : "Mark Read"}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
+              >
+                <Icon name="mail" className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => onArchive(thread.threadId)}
+                title="Archive Thread"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
+              >
+                <Icon name="archive" className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Scrollable Conversation Content */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50">
+            
+            {/* AI INTELLIGENCE CARD (Core Requirement) */}
+            <div className="rounded-2xl border border-brand-200/80 bg-gradient-to-br from-brand-50/70 via-white to-purple-50/40 p-4 shadow-subtle">
+              
+              {/* Responsibility Badge with Manual Override Dropdown */}
+              <div className="flex items-center justify-between gap-2 mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-lg bg-brand-600 text-white flex items-center justify-center">
+                    <Icon name="sparkles" className="w-3.5 h-3.5 text-amber-300" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-brand-700">AI Reply Classification</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className={`text-xs font-extrabold ${
+                        isClientReply ? 'text-amber-800' : isAssistantReply ? 'text-purple-900' : 'text-slate-700'
+                      }`}>
+                        {thread.classification}
+                      </span>
+                      <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-white/80 text-brand-800 border border-brand-200">
+                        {thread.confidence}% Confidence
+                      </span>
+                      {thread.isOverridden && (
+                        <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 border border-amber-300">
+                          Overridden
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* MANUAL OVERRIDE SELECTOR */}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowClassDropdown(!showClassDropdown)}
+                    className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-lg bg-white border border-slate-200 hover:border-brand-300 text-slate-700 shadow-subtle transition"
+                  >
+                    <span>Change</span>
+                    <Icon name="chevron-down" className="w-3 h-3 text-slate-400" />
+                  </button>
+
+                  {showClassDropdown && (
+                    <div className="absolute right-0 mt-1 w-48 bg-white rounded-xl shadow-elevated border border-slate-200 p-1 z-30">
+                      <button
+                        onClick={() => { onOverrideClassification(thread.threadId, 'Assistant to Reply'); setShowClassDropdown(false); }}
+                        className="w-full text-left px-3 py-1.5 text-xs font-medium rounded-lg hover:bg-purple-50 text-purple-900 flex items-center gap-2"
+                      >
+                        <Icon name="user-check" className="w-3.5 h-3.5 text-purple-600" />
+                        <span>Assistant to Reply</span>
+                      </button>
+                      <button
+                        onClick={() => { onOverrideClassification(thread.threadId, 'Client to Reply'); setShowClassDropdown(false); }}
+                        className="w-full text-left px-3 py-1.5 text-xs font-medium rounded-lg hover:bg-amber-50 text-amber-900 flex items-center gap-2"
+                      >
+                        <Icon name="alert-circle" className="w-3.5 h-3.5 text-amber-600" />
+                        <span>Client to Reply</span>
+                      </button>
+                      <button
+                        onClick={() => { onOverrideClassification(thread.threadId, 'No Reply Needed'); setShowClassDropdown(false); }}
+                        className="w-full text-left px-3 py-1.5 text-xs font-medium rounded-lg hover:bg-slate-50 text-slate-700 flex items-center gap-2"
+                      >
+                        <Icon name="check-circle" className="w-3.5 h-3.5 text-slate-400" />
+                        <span>No Reply Needed</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* AI Reasoning Text */}
+              <div className="p-2.5 bg-white/90 rounded-xl border border-brand-100/80 mb-3 text-xs text-slate-700 leading-relaxed">
+                <span className="font-semibold text-brand-900">Why this was classified: </span>
+                <span>{thread.reasoning}</span>
+              </div>
+
+              {/* Executive Summary */}
+              {thread.summary && (
+                <div className="mb-3">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Executive Summary</p>
+                  <p className="text-xs text-slate-800 font-medium leading-relaxed bg-white/60 p-2 rounded-lg border border-slate-100">
+                    {thread.summary}
+                  </p>
+                </div>
+              )}
+
+              {/* Key Points & Action Checklist */}
+              {thread.actionItems && thread.actionItems.length > 0 && (
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Action Items Checklist</p>
+                  <div className="space-y-1">
+                    {thread.actionItems.map((item, idx) => (
+                      <label key={idx} className="flex items-center gap-2 text-xs text-slate-700 bg-white/80 px-2 py-1.5 rounded-lg border border-slate-100 cursor-pointer hover:bg-white transition">
+                        <input type="checkbox" defaultChecked={item.completed} className="rounded text-brand-600 focus:ring-brand-500" />
+                        <span className="font-medium">{item.task}</span>
+                        <span className="ml-auto text-[10px] font-semibold px-1.5 py-0.2 rounded bg-slate-100 text-slate-600">
+                          {item.assignee}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Detected Meeting Banner (if present) */}
+              {thread.detectedMeeting && thread.detectedMeeting.hasMeeting && (
+                <div className="mt-3 p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0">
+                      <Icon name="calendar" className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-emerald-950">{thread.detectedMeeting.title}</p>
+                      <p className="text-[11px] text-emerald-700">{thread.detectedMeeting.date} • {thread.detectedMeeting.time} ({thread.detectedMeeting.location})</p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-emerald-200 text-emerald-900">Meeting</span>
+                </div>
+              )}
+
+            </div>
+
+            {/* Conversation Messages */}
+            <div className="space-y-3">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-1">Conversation Thread ({thread.messages.length})</p>
+              
+              {thread.messages.map((msg, idx) => (
+                <div
+                  key={msg.id || idx}
+                  className={`p-3.5 rounded-2xl border ${
+                    msg.isFromAssistant
+                      ? 'bg-purple-50/80 border-purple-200 ml-6'
+                      : msg.isFromClient
+                        ? 'bg-slate-900 text-white border-slate-800 ml-6'
+                        : 'bg-white border-slate-200/80 mr-6'
+                  } shadow-subtle`}
+                >
+                  <div className="flex items-center justify-between gap-2 mb-2 pb-1.5 border-b border-slate-100">
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs font-bold ${msg.isFromClient ? 'text-white' : 'text-slate-800'}`}>
+                        {msg.sender}
+                      </span>
+                      {msg.isFromAssistant && (
+                        <span className="text-[10px] font-semibold px-1.5 rounded bg-purple-200 text-purple-900">Assistant</span>
+                      )}
+                      {msg.isFromClient && (
+                        <span className="text-[10px] font-semibold px-1.5 rounded bg-amber-400 text-slate-950 font-bold">Client</span>
+                      )}
+                    </div>
+                    <span className={`text-[10px] ${msg.isFromClient ? 'text-slate-400' : 'text-slate-400'}`}>{msg.timestamp}</span>
+                  </div>
+
+                  <p className={`text-xs leading-relaxed whitespace-pre-wrap ${msg.isFromClient ? 'text-slate-200' : 'text-slate-700'}`}>
+                    {msg.body}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+          </div>
+
+          {/* AI Reply Composer / Approval Gate */}
+          <div className="p-3.5 border-t border-slate-200 bg-white">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                  <Icon name="sparkles" className="w-3.5 h-3.5 text-brand-600" />
+                  AI Draft Composer
+                </span>
+                
+                {/* Tone Selector */}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowToneDropdown(!showToneDropdown)}
+                    className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 transition"
+                  >
+                    <span>Tone: <strong className="capitalize">{activeTone}</strong></span>
+                    <Icon name="chevron-down" className="w-3 h-3 text-slate-400" />
+                  </button>
+
+                  {showToneDropdown && (
+                    <div className="absolute left-0 bottom-full mb-1 w-44 bg-white rounded-xl shadow-elevated border border-slate-200 p-1 z-30">
+                      {['professional', 'scheduling', 'direct', 'warm', 'decline'].map(t => (
+                        <button
+                          key={t}
+                          onClick={() => handleToneChange(t)}
+                          className="w-full text-left px-3 py-1.5 text-xs capitalize rounded-lg hover:bg-brand-50 hover:text-brand-700 transition"
+                        >
+                          {t}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <span className="text-[11px] text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 font-medium">
+                Review & approve before sending
+              </span>
+            </div>
+
+            <textarea
+              rows={3}
+              value={replyDraftText}
+              onChange={(e) => setReplyDraftText(e.target.value)}
+              placeholder="Type your response or review AI generated draft..."
+              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition leading-relaxed resize-none font-sans"
+            />
+
+            <div className="flex items-center justify-between mt-2 pt-1">
+              <span className="text-[11px] text-slate-400 font-medium">
+                Sent as: Alex for {thread.clientName}
+              </span>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleToneChange(activeTone)}
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-100 transition"
+                >
+                  Regenerate Draft
+                </button>
+                <button
+                  onClick={() => onSendReply(thread.threadId, replyDraftText)}
+                  className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-bold bg-brand-600 text-white shadow-glow-purple hover:bg-brand-700 transition"
+                >
+                  <Icon name="send" className="w-3.5 h-3.5" />
+                  <span>Approve & Send</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      );
+    }
+
+    // ==========================================
+    // 7. MINIMALISTIC CLIENT PORTAL (Zen View)
+    // ==========================================
+    function ClientPortal({ emails, activeAccount, onHandled, onDelegate, onSwitchToAssistant }) {
+      const [delegatingId, setDelegatingId] = useState(null);
+      const [customNote, setCustomNote] = useState('');
+      const [viewThreadModal, setViewThreadModal] = useState(null);
+
+      // Filter only emails needing Client attention
+      const clientPriorityEmails = emails.filter(e => e.classification === 'Client to Reply' && !e.isCompleted && !e.isArchived);
+      const otherEmailsCount = emails.length - clientPriorityEmails.length;
+
+      return (
+        <div className="flex-1 flex flex-col max-w-4xl w-full mx-auto px-4 sm:px-6 py-8">
+          
+          {/* Executive Greeting Header */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">
+                Client Executive Portal
+              </span>
+              <button
+                onClick={onSwitchToAssistant}
+                className="text-xs text-slate-500 hover:text-brand-600 font-medium underline"
+              >
+                Switch to full assistant workspace →
+              </button>
+            </div>
+            
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+              Good day, {activeAccount.clientName.split(' ')[0]}.
+            </h1>
+            <p className="text-sm text-slate-600 mt-1">
+              {clientPriorityEmails.length > 0 
+                ? `You have ${clientPriorityEmails.length} item${clientPriorityEmails.length === 1 ? '' : 's'} requiring your personal decision or input.`
+                : "You're completely caught up! No urgent decisions currently require your input."}
+            </p>
+          </div>
+
+          {/* Assistant Shield Banner */}
+          <div className="bg-slate-900 text-white rounded-2xl p-4 sm:p-5 mb-8 shadow-elevated flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-brand-500/20 border border-brand-400/30 flex items-center justify-center shrink-0">
+                <Icon name="shield" className="w-5 h-5 text-brand-300" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-slate-200">Executive Shield Active</p>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Assistant Alex has triaged and handled <strong>{otherEmailsCount} routine inquiries, scheduling, and notifications</strong> in the background.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* CLIENT ACTION CARDS */}
+          {clientPriorityEmails.length === 0 ? (
+            <div className="bg-white rounded-3xl border border-slate-200 p-12 text-center shadow-subtle flex flex-col items-center">
+              <div className="w-16 h-16 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4">
+                <Icon name="check-circle" className="w-8 h-8" />
+              </div>
+              <h3 className="text-lg font-bold text-slate-900">Zero Pending Items</h3>
+              <p className="text-xs text-slate-500 mt-1 max-w-sm">
+                All communications are up to date. You can enjoy focus time while your assistant manages your operational inbox.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {clientPriorityEmails.map(thread => (
+                <div
+                  key={thread.threadId}
+                  className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-subtle hover:shadow-card transition flex flex-col gap-4"
+                >
+                  {/* Card Header: Sender & Received date */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <img src={thread.sender.avatar} className="w-10 h-10 rounded-full object-cover border border-slate-200" />
+                      <div>
+                        <h4 className="text-sm font-bold text-slate-900">{thread.sender.name}</h4>
+                        <p className="text-xs text-slate-500">{thread.sender.email} • {thread.messages[0]?.timestamp || 'Today'}</p>
+                      </div>
+                    </div>
+
+                    <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-900 border border-amber-200">
+                      Requires Your Review
+                    </span>
+                  </div>
+
+                  {/* Subject */}
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900 mb-1">{thread.subject}</h3>
+                    
+                    {/* Why Your Response is Needed (AI Highlight) */}
+                    <div className="p-3 bg-amber-50/80 border border-amber-200/80 rounded-xl mt-2 text-xs text-amber-950 flex items-start gap-2.5">
+                      <Icon name="sparkles" className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-bold">Why your input is needed: </span>
+                        <span>{thread.reasoning}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Short Summary Snippet */}
+                  <p className="text-xs text-slate-700 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    {thread.summary}
+                  </p>
+
+                  {/* Client Action Buttons */}
+                  <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+                    
+                    <button
+                      onClick={() => setViewThreadModal(thread)}
+                      className="text-xs font-semibold text-slate-600 hover:text-slate-900 underline self-start sm:self-center"
+                    >
+                      Read full conversation ({thread.messages.length} msg)
+                    </button>
+
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                      
+                      {/* Delegate to Assistant Button */}
+                      <button
+                        onClick={() => setDelegatingId(delegatingId === thread.threadId ? null : thread.threadId)}
+                        className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-purple-50 text-purple-800 border border-purple-200 hover:bg-purple-100 transition"
+                      >
+                        <Icon name="user-check" className="w-3.5 h-3.5" />
+                        <span>Hand to Assistant</span>
+                      </button>
+
+                      {/* Mark Handled Button */}
+                      <button
+                        onClick={() => onHandled(thread.threadId)}
+                        className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-slate-900 text-white hover:bg-slate-800 transition shadow-subtle"
+                      >
+                        <Icon name="check" className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>Mark Handled</span>
+                      </button>
+
+                    </div>
+                  </div>
+
+                  {/* Quick Delegation Instruction Drawer */}
+                  {delegatingId === thread.threadId && (
+                    <div className="p-3.5 bg-purple-50/90 border border-purple-200 rounded-xl mt-2 animate-fadeIn">
+                      <p className="text-xs font-bold text-purple-900 mb-2">Instructions for Assistant Alex:</p>
+                      <div className="flex flex-wrap gap-1.5 mb-2.5">
+                        {['Please decline politely', 'Schedule 30 mins for next week', 'Request revised redlines', 'I approve, proceed with execution'].map(preset => (
+                          <button
+                            key={preset}
+                            onClick={() => setCustomNote(preset)}
+                            className="text-[11px] px-2.5 py-1 rounded-lg bg-white border border-purple-200 hover:bg-purple-100 text-purple-900 font-medium transition"
+                          >
+                            {preset}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={customNote}
+                          onChange={(e) => setCustomNote(e.target.value)}
+                          placeholder="Or type a custom note for Alex..."
+                          className="flex-1 px-3 py-1.5 bg-white border border-purple-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-purple-500"
+                        />
+                        <button
+                          onClick={() => {
+                            onDelegate(thread.threadId, customNote);
+                            setDelegatingId(null);
+                            setCustomNote('');
+                          }}
+                          className="px-4 py-1.5 bg-purple-700 text-white font-bold text-xs rounded-lg hover:bg-purple-800 transition"
+                        >
+                          Confirm Handover
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* MODAL: Full Conversation Readout for Client */}
+          {viewThreadModal && (
+            <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
+                <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-slate-900 truncate">{viewThreadModal.subject}</h3>
+                  <button onClick={() => setViewThreadModal(null)} className="text-slate-400 hover:text-slate-700 p-1">
+                    <Icon name="x" className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="p-5 overflow-y-auto space-y-4">
+                  {viewThreadModal.messages.map((m, idx) => (
+                    <div key={idx} className="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                      <div className="flex justify-between items-center mb-1 text-xs">
+                        <span className="font-bold text-slate-800">{m.sender}</span>
+                        <span className="text-slate-400">{m.timestamp}</span>
+                      </div>
+                      <p className="text-xs text-slate-700 whitespace-pre-wrap leading-relaxed">{m.body}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-end">
+                  <button
+                    onClick={() => setViewThreadModal(null)}
+                    className="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-semibold"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+        </div>
+      );
+    }
+
+    // ==========================================
+    // 8. STATS KPI CARD
+    // ==========================================
+    function StatCard({ label, value, icon, active, onClick, color = "slate", highlight }) {
+      const colorStyles = {
+        purple: active ? 'bg-purple-600 text-white shadow-glow-purple border-purple-600' : 'hover:border-purple-200',
+        amber: active ? 'bg-amber-500 text-slate-950 shadow-glow-amber border-amber-500' : 'hover:border-amber-200',
+        rose: active ? 'bg-rose-600 text-white border-rose-600' : 'hover:border-rose-200',
+        blue: active ? 'bg-blue-600 text-white border-blue-600' : 'hover:border-blue-200',
+        emerald: active ? 'bg-emerald-600 text-white border-emerald-600' : 'hover:border-emerald-200',
+        gray: active ? 'bg-slate-700 text-white border-slate-700' : 'hover:border-slate-300',
+        slate: active ? 'bg-slate-900 text-white border-slate-900' : 'hover:border-slate-300'
+      };
+
+      return (
+        <div
+          onClick={onClick}
+          className={`p-3 rounded-2xl border transition-all cursor-pointer relative bg-white shadow-subtle ${
+            active ? colorStyles[color] : 'border-slate-200/80 hover:bg-slate-50/80'
+          }`}
+        >
+          {highlight && !active && (
+            <span className="absolute top-2 right-2 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.2 rounded bg-amber-100 text-amber-800">
+              {highlight}
+            </span>
+          )}
+          <div className="flex items-center gap-2 mb-1">
+            <Icon name={icon} className={`w-3.5 h-3.5 ${active ? 'text-inherit' : 'text-slate-400'}`} />
+            <p className={`text-[11px] font-semibold truncate ${active ? 'text-inherit' : 'text-slate-500'}`}>
+              {label}
+            </p>
+          </div>
+          <p className="text-xl font-extrabold tracking-tight">{value}</p>
+        </div>
+      );
+    }
+
+    // ==========================================
+    // 9. NAVIGATION TAB ITEM
+    // ==========================================
+    function NavTabItem({ label, icon, count, active, onClick, badgeColor = "bg-slate-100 text-slate-700" }) {
+      return (
+        <button
+          onClick={onClick}
+          className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition ${
+            active
+              ? 'bg-brand-600 text-white shadow-subtle'
+              : 'text-slate-600 hover:bg-slate-100/80 hover:text-slate-900'
+          }`}
+        >
+          <div className="flex items-center gap-2.5">
+            <Icon name={icon} className={`w-4 h-4 ${active ? 'text-white' : 'text-slate-400'}`} />
+            <span>{label}</span>
+          </div>
+          {count !== undefined && count > 0 && (
+            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${active ? 'bg-white/20 text-white' : badgeColor}`}>
+              {count}
+            </span>
+          )}
+        </button>
+      );
+    }
+
+    // ==========================================
+    // 10. UPCOMING MEETINGS WIDGET
+    // ==========================================
+    function UpcomingMeetingsWidget({ emails, onSelectThread }) {
+      const meetingEmails = emails.filter(e => e.detectedMeeting && e.detectedMeeting.hasMeeting);
+
+      return (
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-3.5 shadow-subtle">
+          <div className="flex items-center justify-between mb-2.5">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+              <Icon name="calendar" className="w-3.5 h-3.5 text-emerald-600" />
+              Detected Meetings
+            </span>
+            <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800">
+              {meetingEmails.length}
+            </span>
+          </div>
+
+          <div className="space-y-2">
+            {meetingEmails.slice(0, 3).map(thread => (
+              <div
+                key={thread.threadId}
+                onClick={() => onSelectThread(thread.threadId)}
+                className="p-2 rounded-xl bg-slate-50 hover:bg-brand-50/60 border border-slate-100 transition cursor-pointer"
+              >
+                <p className="text-xs font-bold text-slate-800 truncate">{thread.detectedMeeting.title}</p>
+                <p className="text-[11px] text-emerald-700 font-medium">{thread.detectedMeeting.date} • {thread.detectedMeeting.time}</p>
+                <p className="text-[10px] text-slate-400 truncate mt-0.5">{thread.detectedMeeting.location}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    // ==========================================
+    // 11. INBOUND EMAIL SIMULATOR MODAL
+    // ==========================================
+    function InboundSimulatorModal({ onClose, onSimulate }) {
+      return (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center font-bold">
+                  <Icon name="zap" className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">Live Inbound Email Simulator</h3>
+                  <p className="text-xs text-slate-500">Test how Maya AI instantly classifies and routes inbound email</p>
+                </div>
+              </div>
+              <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+                <Icon name="x" className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 my-5">
+              <button
+                onClick={() => onSimulate('client_urgent')}
+                className="w-full text-left p-3.5 rounded-2xl border border-amber-200 bg-amber-50/60 hover:bg-amber-100/70 transition flex items-start gap-3"
+              >
+                <div className="w-7 h-7 rounded-lg bg-amber-500 text-white flex items-center justify-center shrink-0 font-bold text-xs mt-0.5">
+                  1
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-amber-950">Simulate: Emergency Board Approval (Client to Reply)</p>
+                  <p className="text-[11px] text-amber-800 mt-0.5">Urgent legal addendum from Apex Partners requiring client’s immediate digital sign-off.</p>
+                </div>
+              </button>
+
+              <button
+                onClick={() => onSimulate('assistant_schedule')}
+                className="w-full text-left p-3.5 rounded-2xl border border-purple-200 bg-purple-50/60 hover:bg-purple-100/70 transition flex items-start gap-3"
+              >
+                <div className="w-7 h-7 rounded-lg bg-purple-600 text-white flex items-center justify-center shrink-0 font-bold text-xs mt-0.5">
+                  2
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-purple-950">Simulate: Calendar Reschedule (Assistant to Reply)</p>
+                  <p className="text-[11px] text-purple-800 mt-0.5">Derek Lin requests moving product review. Explicitly requests assistant coordination.</p>
+                </div>
+              </button>
+
+              <button
+                onClick={() => onSimulate('automated_receipt')}
+                className="w-full text-left p-3.5 rounded-2xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition flex items-start gap-3"
+              >
+                <div className="w-7 h-7 rounded-lg bg-slate-600 text-white flex items-center justify-center shrink-0 font-bold text-xs mt-0.5">
+                  3
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-slate-800">Simulate: AWS Monthly Cloud Invoice (No Reply Needed)</p>
+                  <p className="text-[11px] text-slate-600 mt-0.5">Transactional receipt statement with no response needed.</p>
+                </div>
+              </button>
+            </div>
+
+            <div className="flex justify-end">
+              <button onClick={onClose} className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ==========================================
+    // 12. ONBOARDING & EMAIL CONNECTION MODAL
+    // ==========================================
+    function OnboardingModal({ onClose, onAccountConnected }) {
+      const [step, setStep] = useState(1); // 1: Choose provider, 2: Simulated Auth, 3: Syncing
+      const [provider, setProvider] = useState('google');
+      const [emailInput, setEmailInput] = useState('');
+      const [syncProgress, setSyncProgress] = useState(0);
+
+      const startConnection = (selectedProvider) => {
+        setProvider(selectedProvider);
+        setEmailInput(selectedProvider === 'google' ? 'sarah.founder@gmail.com' : 's.jenkins@outlook.com');
+        setStep(2);
+      };
+
+      const authorizeAndSync = () => {
+        setStep(3);
+        let progress = 0;
+        const interval = setInterval(() => {
+          progress += 25;
+          setSyncProgress(progress);
+          if (progress >= 100) {
+            clearInterval(interval);
+            setTimeout(() => {
+              onAccountConnected({
+                id: `acc-${Date.now()}`,
+                provider,
+                email: emailInput,
+                name: `${provider === 'google' ? 'Google Workspace' : 'Microsoft 365'} (${emailInput})`,
+                clientName: 'Sarah Jenkins',
+                clientTitle: 'Executive Account',
+                avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
+                syncStatus: 'active',
+                lastSynced: 'Just now',
+                totalThreads: 6
+              });
+            }, 400);
+          }
+        }, 350);
+      };
+
+      return (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
+            
+            {step === 1 && (
+              <div>
+                <h3 className="text-lg font-extrabold text-slate-900 mb-1">Connect Email Account</h3>
+                <p className="text-xs text-slate-500 mb-5">Select your client's email provider to authorize Maya AI.</p>
+
+                <div className="space-y-3 mb-6">
+                  <button
+                    onClick={() => startConnection('google')}
+                    className="w-full flex items-center justify-between p-3.5 rounded-2xl border border-slate-200 hover:border-brand-500 hover:bg-brand-50/50 transition group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center font-bold text-xs">
+                        G
+                      </div>
+                      <div className="text-left">
+                        <p className="text-xs font-bold text-slate-800 group-hover:text-brand-900">Google Workspace / Gmail</p>
+                        <p className="text-[11px] text-slate-400">OAuth2.0 Secure Sync</p>
+                      </div>
+                    </div>
+                    <Icon name="check" className="w-4 h-4 text-slate-300 group-hover:text-brand-600" />
+                  </button>
+
+                  <button
+                    onClick={() => startConnection('microsoft')}
+                    className="w-full flex items-center justify-between p-3.5 rounded-2xl border border-slate-200 hover:border-brand-500 hover:bg-brand-50/50 transition group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xs">
+                        M
+                      </div>
+                      <div className="text-left">
+                        <p className="text-xs font-bold text-slate-800 group-hover:text-brand-900">Microsoft Outlook / 365</p>
+                        <p className="text-[11px] text-slate-400">Microsoft Graph Integration</p>
+                      </div>
+                    </div>
+                    <Icon name="check" className="w-4 h-4 text-slate-300 group-hover:text-brand-600" />
+                  </button>
+                </div>
+
+                <div className="flex justify-end">
+                  <button onClick={onClose} className="px-4 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-100 rounded-xl">
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {step === 2 && (
+              <div>
+                <div className="w-12 h-12 rounded-2xl bg-brand-100 text-brand-700 flex items-center justify-center mb-4">
+                  <Icon name="shield" className="w-6 h-6" />
+                </div>
+                <h3 className="text-base font-bold text-slate-900 mb-1">Grant Maya AI Permissions</h3>
+                <p className="text-xs text-slate-500 mb-4">Connecting as <strong className="text-slate-800">{emailInput}</strong></p>
+
+                <div className="space-y-2 mb-6 bg-slate-50 p-3.5 rounded-2xl border border-slate-100 text-xs text-slate-600">
+                  <div className="flex items-center gap-2">
+                    <Icon name="check" className="w-4 h-4 text-emerald-600" />
+                    <span>Read email threads to classify responsibility</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Icon name="check" className="w-4 h-4 text-emerald-600" />
+                    <span>Draft responses with mandatory assistant approval</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Icon name="check" className="w-4 h-4 text-emerald-600" />
+                    <span>Detect calendar appointments and deadlines</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-2">
+                  <button onClick={() => setStep(1)} className="px-4 py-2 text-xs font-semibold text-slate-500">Back</button>
+                  <button
+                    onClick={authorizeAndSync}
+                    className="px-5 py-2.5 bg-brand-600 text-white rounded-xl text-xs font-bold shadow-glow-purple hover:bg-brand-700 transition"
+                  >
+                    Authorize & Synchronize
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {step === 3 && (
+              <div className="text-center py-4">
+                <div className="w-12 h-12 rounded-full border-4 border-brand-200 border-t-brand-600 animate-spin mx-auto mb-4"></div>
+                <h3 className="text-sm font-bold text-slate-900 mb-1">Synchronizing Inbox...</h3>
+                <p className="text-xs text-slate-500 mb-4">Applying Maya AI responsibility classification engine</p>
+                <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden mb-2">
+                  <div className="bg-brand-600 h-full transition-all duration-300" style={{ width: `${syncProgress}%` }}></div>
+                </div>
+                <span className="text-[11px] font-mono text-slate-400">{syncProgress}% Complete</span>
+              </div>
+            )}
+
+          </div>
+        </div>
+      );
+    }
+
+    // ==========================================
+    // 13. AI COPILOT CHAT DRAWER ("Ask Maya AI")
+    // ==========================================
+    function AICopilotDrawer({ onClose, emails, onOpenThread }) {
+      const [messages, setMessages] = useState([
+        {
+          id: 'welcome',
+          isUser: false,
+          text: "Hi Alex! I'm your Maya AI Executive Copilot. Ask me anything about Sarah's inbox—such as pending approvals, who needs to reply, or request drafted replies."
+        }
+      ]);
+      const [input, setInput] = useState('');
+
+      const handleAsk = (queryText) => {
+        const q = queryText || input;
+        if (!q.trim()) return;
+
+        const userMsg = { id: `u-${Date.now()}`, isUser: true, text: q };
+        setMessages(prev => [...prev, userMsg]);
+        setInput('');
+
+        setTimeout(() => {
+          const lq = q.toLowerCase();
+          let replyText = '';
+          let actionId = null;
+
+          if (lq.includes('need my attention') || lq.includes('client attention') || lq.includes('attention')) {
+            const clientItems = emails.filter(e => e.classification === 'Client to Reply' && !e.isCompleted);
+            replyText = `There are **${clientItems.length} emails** requiring Sarah’s personal attention:\n\n` +
+              clientItems.map(i => `• **${i.sender.name}**: "${i.subject}"\n  _Reason: ${i.reasoning}_`).join('\n\n');
+            actionId = clientItems[0]?.threadId;
+          } else if (lq.includes('waiting') || lq.includes('pending response')) {
+            const waitingItems = emails.filter(e => e.waitingForResponse);
+            replyText = `You are waiting on **${waitingItems.length} conversations**:\n\n` +
+              waitingItems.map(i => `• **${i.sender.name}**: "${i.subject}" (Sent follow-up yesterday)`).join('\n');
+            actionId = waitingItems[0]?.threadId;
+          } else if (lq.includes('summarize')) {
+            const sample = emails[0];
+            replyText = `**Executive Summary for "${sample.subject}"**:\n\n${sample.summary}\n\n**Key Points:**\n${sample.keyPoints.map(p => `• ${p}`).join('\n')}`;
+            actionId = sample.threadId;
+          } else if (lq.includes('why') && lq.includes('client')) {
+            const clientSample = emails.find(e => e.classification === 'Client to Reply') || emails[0];
+            replyText = `**"${clientSample.subject}"** was classified as **Client to Reply** (${clientSample.confidence}% confidence) because:\n\n> ${clientSample.reasoning}\n\nHigh-stakes governance, equity, or personal decisions are automatically escalated to the client.`;
+            actionId = clientSample.threadId;
+          } else {
+            replyText = `Here is the current inbox summary for Sarah Jenkins:\n\n• **${emails.filter(e => e.classification === 'Assistant to Reply').length}** tasks assigned to you (Assistant to Reply)\n• **${emails.filter(e => e.classification === 'Client to Reply').length}** items requiring Sarah's approval\n• **${emails.filter(e => e.detectedMeeting?.hasMeeting).length}** calendar sync requests detected`;
+          }
+
+          setMessages(prev => [...prev, {
+            id: `ai-${Date.now()}`,
+            isUser: false,
+            text: replyText,
+            actionId
+          }]);
+        }, 500);
+      };
+
+      return (
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex justify-end">
+          <div className="bg-white w-full max-w-md h-full shadow-2xl flex flex-col border-l border-slate-200 animate-slideLeft">
+            
+            {/* Header */}
+            <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/80">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-600 text-white flex items-center justify-center">
+                  <Icon name="sparkles" className="w-4 h-4 text-amber-300" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">Maya AI Copilot</h3>
+                  <p className="text-[11px] text-slate-500">Natural language inbox intelligence</p>
+                </div>
+              </div>
+              <button onClick={onClose} className="text-slate-400 hover:text-slate-600 p-1">
+                <Icon name="x" className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Quick Prompt Chips */}
+            <div className="p-3 border-b border-slate-100 bg-white flex gap-1.5 overflow-x-auto text-xs">
+              <button
+                onClick={() => handleAsk("Show me emails that need my attention")}
+                className="whitespace-nowrap px-2.5 py-1 rounded-lg bg-brand-50 text-brand-700 hover:bg-brand-100 font-medium transition"
+              >
+                Needs Attention
+              </button>
+              <button
+                onClick={() => handleAsk("What am I waiting for a response on?")}
+                className="whitespace-nowrap px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 font-medium transition"
+              >
+                Waiting On
+              </button>
+              <button
+                onClick={() => handleAsk("Why has this email been assigned to the client?")}
+                className="whitespace-nowrap px-2.5 py-1 rounded-lg bg-amber-50 text-amber-800 hover:bg-amber-100 font-medium transition"
+              >
+                Why Client?
+              </button>
+            </div>
+
+            {/* Chat Messages */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              {messages.map(m => (
+                <div key={m.id} className={`flex flex-col ${m.isUser ? 'items-end' : 'items-start'}`}>
+                  <div
+                    className={`p-3 rounded-2xl max-w-[88%] text-xs leading-relaxed whitespace-pre-wrap ${
+                      m.isUser
+                        ? 'bg-brand-600 text-white rounded-tr-none'
+                        : 'bg-slate-100 text-slate-800 rounded-tl-none border border-slate-200/60'
+                    }`}
+                  >
+                    {m.text}
+                  </div>
+                  {m.actionId && (
+                    <button
+                      onClick={() => onOpenThread(m.actionId)}
+                      className="mt-1 text-[11px] text-brand-600 hover:underline font-semibold"
+                    >
+                      Inspect thread →
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Input Bar */}
+            <div className="p-3 border-t border-slate-100 bg-white flex gap-2">
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAsk()}
+                placeholder="Ask Maya about emails, schedule, replies..."
+                className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+              />
+              <button
+                onClick={() => handleAsk()}
+                className="px-3.5 py-2 bg-brand-600 text-white rounded-xl text-xs font-bold hover:bg-brand-700 transition"
+              >
+                <Icon name="send" className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+          </div>
+        </div>
+      );
+    }
+
+    // Mount the Application
+    ReactDOM.createRoot(document.getElementById('root')).render(<MayaApp />);
+  </script>
+</body>
+</html>
